@@ -16,9 +16,27 @@ class _SpendMoneyState extends State<SpendMoneyWidget> {
           child: i == null? new Text(s, style: TextStyle(fontSize: 20.0,),) : i,
           color: c,
           padding: new EdgeInsets.all(30.0),
-          onPressed: () => {},
+          onPressed: () => buttonPressed(s),
         )
     );
+  }
+
+  void buttonPressed(String s){
+    if(s == "erase") {
+      if(amount.length > 1) {
+        amount = amount.substring(0, amount.length - 1);
+      }else{
+        amount = "0";
+      }
+    }else if(s != "." || !amount.contains(".")){
+      amount = amount + s;
+    }
+    setState(() {
+      amount = amount;
+      if(amount.contains(".") && amount.indexOf(".") + 3 <= amount.length){
+        amount = amount.substring(0, amount.indexOf(".") + 3);
+      }
+    });
   }
 
   @override
@@ -71,7 +89,7 @@ class _SpendMoneyState extends State<SpendMoneyWidget> {
                 children: [
                   buildButton("."),
                   buildButton("0"),
-                  buildButton("", Icon(Icons.backspace)),
+                  buildButton("erase", Icon(Icons.backspace)),
                 ],
               )
             ],

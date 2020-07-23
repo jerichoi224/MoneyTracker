@@ -23,6 +23,7 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+
   intl: "^0.15.6"
 
 

@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import "package:intl/intl.dart";
 
 class SpendMoneyWidget extends StatefulWidget {
+  final Map<String, double> data;
+  SpendMoneyWidget({Key key, this.data}) : super(key: key);
+
   @override
   State createState() => _SpendMoneyState();
 }
@@ -28,6 +31,9 @@ class _SpendMoneyState extends State<SpendMoneyWidget> {
       }else{
         amount = "0";
       }
+    }else if(s == "Spend"){
+      widget.data["todaySpent"] += double.parse(amount);
+      amount = "0";
     }else if(s != "." || !amount.contains(".")){
       amount = amount + s;
     }
@@ -94,8 +100,6 @@ class _SpendMoneyState extends State<SpendMoneyWidget> {
               )
             ],
           )
-
-          
         ],
       )
     );

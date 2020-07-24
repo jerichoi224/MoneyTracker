@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import "package:intl/intl.dart";
 
 class DisplayWidget extends StatefulWidget {
+  final Map<String, double> data;
+  DisplayWidget({Key key, this.data}) : super(key: key);
+
   @override
   State createState() => _DisplayState();
 }
@@ -21,22 +24,21 @@ class _DisplayState extends State<DisplayWidget> {
         )
     );
   }
-
   @override
   Widget build(BuildContext context) {
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
       children: <Widget>[
         Center(child:
-        Text("Remaining Amount",
+        Text("Remaining Today",
           style: TextStyle(fontSize: 20.0,),
         )
         ),
-        _moneyText(-10),
+        _moneyText(widget.data["dailyLimit"] - widget.data["todaySpent"]),
         new Padding(padding: new EdgeInsets.all(10.0)),
         Center(child:
         Text(
-          "Saved this week",
+          "Savings this week",
           style: TextStyle(fontSize: 20.0,),
         )
         ),

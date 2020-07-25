@@ -50,7 +50,7 @@ class _MainState extends State<MainApp>{
     var now = DateTime.now().toLocal();
     double today = double.parse(now.year.toString() + now.month.toString() + now.day.toString());
     if(data["monthlyResetDate"] == 0) {
-      data["monthlyResetDate"] = now.month.toDouble();
+      data["monthlyResetDate"] = now.day.toDouble();
     }
 
     // New Day
@@ -83,8 +83,6 @@ class _MainState extends State<MainApp>{
 
     setState(() {
       data = result;
-      _save("monthlyResetDate", data["monthlyResetDate"]);
-      _save("dailyLimit", data["dailyLimit"]);
     });
   }
 

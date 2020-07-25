@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import "package:intl/intl.dart";
+import 'package:shared_preferences/shared_preferences.dart';
 
 class SettingsWidget extends StatefulWidget {
   final myController = TextEditingController();
@@ -11,8 +13,10 @@ class SettingsWidget extends StatefulWidget {
 }
 
 class _SettingsState extends State<SettingsWidget> {
-  double currentDaily;
+  String currentDaily;
   String monthlyReset;
+
+  NumberFormat moneyNf = NumberFormat.simpleCurrency(decimalDigits: 2);
 
   String getMonthlyResetString(){
     String num = widget.data["monthlyResetDate"].toInt().toString();
@@ -21,6 +25,7 @@ class _SettingsState extends State<SettingsWidget> {
     if(num == "3") return "3rd";
     return num + "th";
   }
+
   void resetMonthlySpending(){
     var now = DateTime.now().toLocal();
     double today = double.parse(now.day.toString());
@@ -29,10 +34,49 @@ class _SettingsState extends State<SettingsWidget> {
     widget.data["monthlySaved"] = 0.0;
   }
 
+  showAlertDialog(BuildContext context) {
+    // set up the buttons
+    Widget cancelButton = FlatButton(
+      child: Text("Cancel"),
+      onPressed:  () {Navigator.of(context).pop();},
+    );
+    Widget continueButton = FlatButton(
+      child: Text("Reset"),
+      onPressed: (){
+        resetMonthlySpending();
+        _save("monthlyResetDate", widget.data["monthlyResetDate"]);
+        setState(() {});
+        Navigator.of(context).pop();
+        Scaffold.of(context).showSnackBar(SnackBar(
+          content: Text('Monthly usage reset'),
+          duration: Duration(seconds: 3),
+        ));
+      },
+    );
+
+    // set up the AlertDialog
+    AlertDialog alert = AlertDialog(
+      title: Text("Confirm Reset"),
+      content: Text("Would you like to reset your Monthly Saving? Your cycle will reset to start today as well."),
+      actions: [
+        cancelButton,
+        continueButton,
+      ],
+    );
+
+    // show the dialog
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return alert;
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     monthlyReset = getMonthlyResetString();
-    currentDaily = widget.data["dailyLimit"];
+    currentDaily = moneyNf.format(widget.data["dailyLimit"]);
     return WillPopScope(
         onWillPop: (){
           Navigator.pop(context, widget.data);
@@ -66,7 +110,7 @@ class _SettingsState extends State<SettingsWidget> {
                               children: <Widget>[
                                 new Text("Current daily limit"),
                                 Spacer(),
-                                new Text("\$$currentDaily")
+                                new Text("$currentDaily")
                               ],
                             )
                         ),
@@ -89,12 +133,7 @@ class _SettingsState extends State<SettingsWidget> {
                         ),
                         ListTile(
                             onTap: (){
-                              resetMonthlySpending();
-                              setState(() {});
-                              Scaffold.of(context).showSnackBar(SnackBar(
-                                content: Text('Monthly usage reset'),
-                                duration: Duration(seconds: 3),
-                              ));
+                              showAlertDialog(context);
                             },
                             title: new Row(
                               children: <Widget>[
@@ -121,6 +160,7 @@ class _SettingsState extends State<SettingsWidget> {
                           ListTile(
                             onTap:(){
                               widget.data["dailyLimit"] = double.parse(widget.myController.text);
+                              _save("dailyLimit", widget.data["dailyLimit"]);
                               Navigator.pop(context, widget.data);
                             },
                             title: Text("Save Setting",
@@ -139,5 +179,10 @@ class _SettingsState extends State<SettingsWidget> {
           )
         )
     );
+  }
+
+  _save(String key, double value) async {
+    final prefs = await SharedPreferences.getInstance();
+    prefs.setDouble(key, value);
   }
 }

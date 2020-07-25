@@ -34,6 +34,13 @@ class _SettingsState extends State<SettingsWidget> {
     widget.data["monthlySaved"] = 0.0;
   }
 
+  bool isNumeric(String s) {
+    if (s == null) {
+      return false;
+    }
+    return double.tryParse(s) != null;
+  }
+
   showAlertDialog(BuildContext context) {
     // set up the buttons
     Widget cancelButton = FlatButton(
@@ -159,8 +166,20 @@ class _SettingsState extends State<SettingsWidget> {
                         children: <Widget>[
                           ListTile(
                             onTap:(){
-                              widget.data["dailyLimit"] = double.parse(widget.myController.text);
-                              _save("dailyLimit", widget.data["dailyLimit"]);
+                              if(widget.myController.text.isNotEmpty) {
+                                if(isNumeric(widget.myController.text)) {
+                                  widget.data["dailyLimit"] =
+                                      double.parse(widget.myController.text);
+                                  _save(
+                                      "dailyLimit", widget.data["dailyLimit"]);
+                                }else{
+                                  Scaffold.of(context).showSnackBar(SnackBar(
+                                    content: Text('Your input is invalid. Please Check again'),
+                                    duration: Duration(seconds: 3),
+                                  ));
+                                  return;
+                                }
+                              }
                               Navigator.pop(context, widget.data);
                             },
                             title: Text("Save Setting",

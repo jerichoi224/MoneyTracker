@@ -9,9 +9,12 @@ The Basic Idea is that you are able to decide how much you want to be using ever
 
 - Proper Documentation with screenshots
 
+- Make Save Settings do the same as going back when there are no changes.
+- Save value in the spend screen while navigating different screens(?)
+
 - Add recurring payments (Subscriptions)
 - Swipe between screens?
-- Make Save Settings do the same as going back when there are no changes.
+
 - Add Databases of all spendings
   - Maybe add a new screen that shows all the money spendings made
   - optional textfield if user wants to note what the spending was for

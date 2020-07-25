@@ -19,7 +19,7 @@ class _SpendMoneyState extends State<SpendMoneyWidget> {
         child: new MaterialButton(
           child: i == null? new Text(s, style: TextStyle(fontSize: 20.0,),) : i,
           color: c,
-          padding: new EdgeInsets.all(30.0),
+          padding: new EdgeInsets.all(20.0),
           onPressed: () => buttonPressed(s),
         )
     );
@@ -50,14 +50,11 @@ class _SpendMoneyState extends State<SpendMoneyWidget> {
       child: Column(
         children: <Widget>[
           new Container(
-            padding: new EdgeInsets.symmetric(
-              vertical: 30.0,
-              horizontal:  12.0
-            ),
+            padding: new EdgeInsets.fromLTRB(0, 60, 0, 0),
             child: new Text(moneyNf.format(double.parse(amount)/100.0),
               textAlign: TextAlign.center,
               style: new TextStyle(
-                fontSize: 40,
+                fontSize: 50,
               ),
             ),
           ),
@@ -66,7 +63,7 @@ class _SpendMoneyState extends State<SpendMoneyWidget> {
             children: [
               new Row(
                   children: [
-                    buildButton("Spend", null, Colors.white54),
+                    buildButton("Spend", null, Color.fromRGBO(149, 213, 178, 1)),
                   ]
               ),
               new Row(

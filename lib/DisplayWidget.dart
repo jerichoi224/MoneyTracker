@@ -3,6 +3,7 @@ import "package:intl/intl.dart";
 
 class DisplayWidget extends StatefulWidget {
   final Map<String, double> data;
+
   DisplayWidget({Key key, this.data}) : super(key: key);
 
   @override
@@ -15,35 +16,38 @@ class _DisplayState extends State<DisplayWidget> {
 
   Widget _moneyText(double a) {
     return Center(
-        child: Text(
-            moneyNf.format(a),
-            style: TextStyle(
-                fontSize: 40.0,
-                color: a > 0 ? Colors.lightGreen : Colors.red
-            )
-        )
-    );
+        child: Text(moneyNf.format(a),
+            style: TextStyle(fontSize: 40.0, color: getColor(a))));
   }
+
+  Color getColor(i) {
+    if (i < 0) return Colors.red;
+    if (i > 0) return Colors.lightGreen;
+    return Colors.black;
+  }
+
   @override
   Widget build(BuildContext context) {
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
       children: <Widget>[
-        Center(child:
-        Text("Remaining Today",
-          style: TextStyle(fontSize: 20.0,),
-        )
-        ),
+        Center(
+            child: Text(
+          "Remaining Today",
+          style: TextStyle(
+            fontSize: 20.0,
+          ),
+        )),
         _moneyText(widget.data["dailyLimit"] - widget.data["todaySpent"]),
         new Padding(padding: new EdgeInsets.all(10.0)),
-        Center(child:
-        Text(
-          "Savings this week",
-          style: TextStyle(fontSize: 20.0,),
-        )
-        ),
-        _moneyText(40.0)
-
+        Center(
+            child: Text(
+          "Savings this month",
+          style: TextStyle(
+            fontSize: 20.0,
+          ),
+        )),
+        _moneyText(widget.data["monthlySaved"])
       ],
     );
   }

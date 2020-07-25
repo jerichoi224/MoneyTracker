@@ -75,7 +75,7 @@ class _MainState extends State<MainApp>{
           )
         ],
       ),
-      body: children[_currentIndex],
+      body: data["dailyLimit"] != null ? children[_currentIndex] : new Scaffold(),
       bottomNavigationBar: BottomNavigationBar(
         onTap: onTabTapped, // new
         currentIndex: _currentIndex, // new
@@ -101,13 +101,9 @@ class _MainState extends State<MainApp>{
 
   Future<double> _read(String key) async {
     final prefs = await SharedPreferences.getInstance();
-    double value = prefs.getDouble(key) ?? 0;
+    double value = prefs.getDouble(key);
+    if(value == null){return 0.0;}
     return value;
-  }
-
-  _save(String key, double value) async {
-    final prefs = await SharedPreferences.getInstance();
-    prefs.setDouble(key, value);
   }
 }
 

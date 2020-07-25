@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import "package:intl/intl.dart";
+import 'package:shared_preferences/shared_preferences.dart';
 
 class SpendMoneyWidget extends StatefulWidget {
   final Map<String, double> data;
@@ -32,17 +33,15 @@ class _SpendMoneyState extends State<SpendMoneyWidget> {
         amount = "0";
       }
     }else if(s == "Spend"){
-      widget.data["todaySpent"] += double.parse(amount);
+      widget.data["todaySpent"] += double.parse(amount)/100.0;
+      _save("todaySpent", widget.data["todaySpent"]);
       amount = "0";
-    }else if(s != "." || !amount.contains(".")){
-      amount = amount + s;
+    }else if(s == "C"){
+      amount = "0";
+    }else{
+      amount += s;
     }
-    setState(() {
-      amount = amount;
-      if(amount.contains(".") && amount.indexOf(".") + 3 <= amount.length){
-        amount = amount.substring(0, amount.indexOf(".") + 3);
-      }
-    });
+    setState(() {amount = amount;});
   }
 
   @override
@@ -52,10 +51,10 @@ class _SpendMoneyState extends State<SpendMoneyWidget> {
         children: <Widget>[
           new Container(
             padding: new EdgeInsets.symmetric(
-              vertical: 40.0,
+              vertical: 30.0,
               horizontal:  12.0
             ),
-            child: new Text(moneyNf.format(double.parse(amount)),
+            child: new Text(moneyNf.format(double.parse(amount)/100.0),
               textAlign: TextAlign.center,
               style: new TextStyle(
                 fontSize: 40,
@@ -93,7 +92,7 @@ class _SpendMoneyState extends State<SpendMoneyWidget> {
               ),
               new Row(
                 children: [
-                  buildButton("."),
+                  buildButton("C"),
                   buildButton("0"),
                   buildButton("erase", Icon(Icons.backspace)),
                 ],
@@ -103,5 +102,10 @@ class _SpendMoneyState extends State<SpendMoneyWidget> {
         ],
       )
     );
+  }
+
+  _save(String key, double value) async {
+    final prefs = await SharedPreferences.getInstance();
+    prefs.setDouble(key, value);
   }
 }

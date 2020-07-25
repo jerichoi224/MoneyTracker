@@ -99,8 +99,4 @@ class DatabaseHelper {
     }
     return null;
   }
-
-// TODO: queryAllWords()
-// TODO: delete(int id)
-// TODO: update(Word word)
 }

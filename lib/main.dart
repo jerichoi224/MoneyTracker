@@ -30,6 +30,7 @@ class MainApp extends StatefulWidget {
 }
 
 class _MainState extends State<MainApp>{
+  final pagecontroller = PageController(initialPage: 0);
   int _currentIndex = 0;
   bool ready = false;
   Map<String, double> data;
@@ -77,10 +78,9 @@ class _MainState extends State<MainApp>{
     }
 
     // This function won't run during this session anymore
-    ready = true;
-
-    //Update widget
-    setState((){});
+    setState((){
+      ready = true;
+    });
 
     // Save Values
     _save("todayDate", data);
@@ -110,6 +110,12 @@ class _MainState extends State<MainApp>{
     });
   }
 
+  changePage(int index){
+    setState(() {
+      _currentIndex = index;
+    });
+  }
+
   @override
   Widget build(BuildContext context){
     final List<Widget> children = _children();
@@ -127,7 +133,6 @@ class _MainState extends State<MainApp>{
 
     // App Loads
     return Scaffold(
-//      resizeToAvoidBottomInset: false,
       appBar: AppBar(
         title: Text("Money Tracker"),
         actions: [
@@ -137,7 +142,13 @@ class _MainState extends State<MainApp>{
           )
         ],
       ),
-      body: children[_currentIndex],
+      body: PageView(
+          onPageChanged: (index) {
+            changePage(index);
+          },
+          controller: pagecontroller,
+          children: children
+      ),
       bottomNavigationBar: BottomNavigationBar(
         onTap: onTabTapped, // new
         currentIndex: _currentIndex, // new
@@ -158,6 +169,7 @@ class _MainState extends State<MainApp>{
   void onTabTapped(int index) {
     setState(() {
       _currentIndex = index;
+      pagecontroller.animateToPage(index, duration: Duration(milliseconds: 500), curve: Curves.ease);
     });
   }
 

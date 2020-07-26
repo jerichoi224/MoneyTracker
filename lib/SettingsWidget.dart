@@ -29,9 +29,11 @@ class _SettingsState extends State<SettingsWidget> {
   void resetMonthlySpending(){
     var now = DateTime.now().toLocal();
     double today = double.parse(now.day.toString());
-    widget.data["monthlyResetDate"] = today;
-    widget.data["todaySpent"] = 0.0;
-    widget.data["monthlySaved"] = 0.0;
+    setState(() {
+      widget.data["monthlyResetDate"] = today;
+      widget.data["todaySpent"] = 0.0;
+      widget.data["monthlySaved"] = 0.0;
+    });
   }
 
   bool isNumeric(String s) {
@@ -52,7 +54,6 @@ class _SettingsState extends State<SettingsWidget> {
       onPressed: (){
         resetMonthlySpending();
         _save("monthlyResetDate", widget.data);
-        setState(() {});
         Navigator.of(context).pop();
         Scaffold.of(context).showSnackBar(SnackBar(
           content: Text('Monthly usage reset'),

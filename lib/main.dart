@@ -127,6 +127,7 @@ class _MainState extends State<MainApp>{
 
     // App Loads
     return Scaffold(
+//      resizeToAvoidBottomInset: false,
       appBar: AppBar(
         title: Text("Money Tracker"),
         actions: [

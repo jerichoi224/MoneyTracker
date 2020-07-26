@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import "package:intl/intl.dart";
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter_keyboard_visibility/flutter_keyboard_visibility.dart';
 
 class SpendMoneyWidget extends StatefulWidget {
   final Map<String, double> data;
@@ -13,19 +14,17 @@ class SpendMoneyWidget extends StatefulWidget {
 class _SpendMoneyState extends State<SpendMoneyWidget> {
   NumberFormat moneyNf = NumberFormat.simpleCurrency(decimalDigits: 2);
   final myController = TextEditingController();
-  FocusNode _focus = new FocusNode();
   String amount;
   bool keypadVisibility = true;
 
   @override
   void initState() {
     super.initState();
-    _focus.addListener(_onFocusChange);
-  }
 
-  void _onFocusChange(){
-    keypadVisibility = !_focus.hasFocus;
-    setState(() {});
+    KeyboardVisibility.onChange.listen((bool visible) {
+        setState(() {keypadVisibility = !visible;});
+    });
+
   }
 
   Widget buildButton(String s, [Icon i, Color c]){
@@ -33,7 +32,7 @@ class _SpendMoneyState extends State<SpendMoneyWidget> {
         child: new MaterialButton(
           child: i == null? new Text(s, style: TextStyle(fontSize: 20.0,),) : i,
           color: c,
-          padding: new EdgeInsets.all(25.0),
+          padding: new EdgeInsets.all(20.0),
           onPressed: () => buttonPressed(s),
         )
     );
@@ -75,9 +74,11 @@ class _SpendMoneyState extends State<SpendMoneyWidget> {
               SliverFillRemaining(
                   hasScrollBody: false,
                   child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: <Widget>[
+
                       new Container(
-                        padding: new EdgeInsets.fromLTRB(0, 60, 0, 20),
+                        padding: new EdgeInsets.fromLTRB(0, 60, 0, 30),
                         child: new Text(moneyNf.format(double.parse(amount)/100.0),
                           textAlign: TextAlign.center,
                           style: new TextStyle(
@@ -90,7 +91,6 @@ class _SpendMoneyState extends State<SpendMoneyWidget> {
                             children: <Widget>[
                               Flexible(
                                   child: TextField(
-                                    focusNode: _focus,
                                     controller: myController,
                                     decoration: InputDecoration(
                                       border: const OutlineInputBorder(),
@@ -102,7 +102,7 @@ class _SpendMoneyState extends State<SpendMoneyWidget> {
                             ],
                           )
                       ),
-                      new Expanded(child: new Divider()),
+                      new Expanded(child: new Container()),
                       new Row(
                           children: [
                             buildButton("Spend", null, Color.fromRGBO(149, 213, 178, 1)),

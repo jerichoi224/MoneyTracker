@@ -15,6 +15,10 @@ class _DisplayState extends State<DisplayWidget> {
   int remaining, saved;
 
   Widget _moneyText(double a) {
+    // round value to two decimal
+    int rounded = (a * 100).toInt();
+    a = rounded/100;
+
     return Center(
         child: Text(moneyNf.format(a),
             style: TextStyle(fontSize: 40.0, color: getColor(a))));

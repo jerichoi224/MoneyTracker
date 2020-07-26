@@ -51,7 +51,7 @@ class _SettingsState extends State<SettingsWidget> {
       child: Text("Reset"),
       onPressed: (){
         resetMonthlySpending();
-        _save("monthlyResetDate", widget.data["monthlyResetDate"]);
+        _save("monthlyResetDate", widget.data);
         setState(() {});
         Navigator.of(context).pop();
         Scaffold.of(context).showSnackBar(SnackBar(
@@ -170,8 +170,7 @@ class _SettingsState extends State<SettingsWidget> {
                                 if(isNumeric(widget.myController.text)) {
                                   widget.data["dailyLimit"] =
                                       double.parse(widget.myController.text);
-                                  _save(
-                                      "dailyLimit", widget.data["dailyLimit"]);
+                                  _save("dailyLimit", widget.data);
                                 }else{
                                   Scaffold.of(context).showSnackBar(SnackBar(
                                     content: Text('Your input is invalid. Please Check again'),
@@ -200,8 +199,8 @@ class _SettingsState extends State<SettingsWidget> {
     );
   }
 
-  _save(String key, double value) async {
+  _save(String key, Map<String, double> data) async {
     final prefs = await SharedPreferences.getInstance();
-    prefs.setDouble(key, value);
+    prefs.setDouble(key, data[key]);
   }
 }

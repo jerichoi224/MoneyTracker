@@ -12,14 +12,28 @@ class SpendMoneyWidget extends StatefulWidget {
 
 class _SpendMoneyState extends State<SpendMoneyWidget> {
   NumberFormat moneyNf = NumberFormat.simpleCurrency(decimalDigits: 2);
+  final myController = TextEditingController();
+  FocusNode _focus = new FocusNode();
+  String amount;
+  bool keypadVisibility = true;
 
-  String amount = "0";
+  @override
+  void initState() {
+    super.initState();
+    _focus.addListener(_onFocusChange);
+  }
+
+  void _onFocusChange(){
+    keypadVisibility = !_focus.hasFocus;
+    setState(() {});
+  }
+
   Widget buildButton(String s, [Icon i, Color c]){
     return new Expanded(
         child: new MaterialButton(
           child: i == null? new Text(s, style: TextStyle(fontSize: 20.0,),) : i,
           color: c,
-          padding: new EdgeInsets.all(20.0),
+          padding: new EdgeInsets.all(25.0),
           onPressed: () => buttonPressed(s),
         )
     );
@@ -34,75 +48,112 @@ class _SpendMoneyState extends State<SpendMoneyWidget> {
       }
     }else if(s == "Spend"){
       widget.data["todaySpent"] += double.parse(amount)/100.0;
-      _save("todaySpent", widget.data["todaySpent"]);
+      _save("todaySpent", widget.data);
       amount = "0";
     }else if(s == "C"){
       amount = "0";
     }else{
       amount += s;
     }
-    setState(() {amount = amount;});
+    setState(() {
+      amount = amount;
+      widget.data["SpendValue"] = double.parse(amount);
+    });
   }
 
   @override
   Widget build(BuildContext context) {
-    return new Container(
-      child: Column(
-        children: <Widget>[
-          new Container(
-            padding: new EdgeInsets.fromLTRB(0, 60, 0, 0),
-            child: new Text(moneyNf.format(double.parse(amount)/100.0),
-              textAlign: TextAlign.center,
-              style: new TextStyle(
-                fontSize: 50,
-              ),
-            ),
-          ),
-          new Expanded(child: new Divider()),
-          new Column(
-            children: [
-              new Row(
-                  children: [
-                    buildButton("Spend", null, Color.fromRGBO(149, 213, 178, 1)),
-                  ]
-              ),
-              new Row(
-                children: [
-                  buildButton("1"),
-                  buildButton("2"),
-                  buildButton("3"),
-                ],
-              ),
-              new Row(
-                children: [
-                  buildButton("4"),
-                  buildButton("5"),
-                  buildButton("6"),
-                ],
-              ),
-              new Row(
-                children: [
-                  buildButton("7"),
-                  buildButton("8"),
-                  buildButton("9"),
-                ],
-              ),
-              new Row(
-                children: [
-                  buildButton("C"),
-                  buildButton("0"),
-                  buildButton("erase", Icon(Icons.backspace)),
-                ],
-              )
-            ],
+    amount = widget.data["SpendValue"].toInt().toString();
+
+    return new GestureDetector(
+        onTap: () {
+          FocusScope.of(context).unfocus();
+        },
+        child:new Container(
+          child: CustomScrollView(
+              slivers: [
+              SliverFillRemaining(
+                  hasScrollBody: false,
+                  child: Column(
+                    children: <Widget>[
+                      new Container(
+                        padding: new EdgeInsets.fromLTRB(0, 60, 0, 20),
+                        child: new Text(moneyNf.format(double.parse(amount)/100.0),
+                          textAlign: TextAlign.center,
+                          style: new TextStyle(
+                            fontSize: 50,
+                          ),
+                        ),
+                      ),
+                      ListTile(
+                          title: new Row(
+                            children: <Widget>[
+                              Flexible(
+                                  child: TextField(
+                                    focusNode: _focus,
+                                    controller: myController,
+                                    decoration: InputDecoration(
+                                      border: const OutlineInputBorder(),
+                                      hintText: '(Optional) Enter Description',
+                                    ),
+                                    textAlign: TextAlign.start,
+                                  )
+                              )
+                            ],
+                          )
+                      ),
+                      new Expanded(child: new Divider()),
+                      new Row(
+                          children: [
+                            buildButton("Spend", null, Color.fromRGBO(149, 213, 178, 1)),
+                          ]
+                      ),
+                      Visibility (
+                        visible: keypadVisibility,
+                        child: new Column(
+                          children: [
+                            new Row(
+                              children: [
+                                buildButton("1"),
+                                buildButton("2"),
+                                buildButton("3"),
+                              ],
+                            ),
+                            new Row(
+                              children: [
+                                buildButton("4"),
+                                buildButton("5"),
+                                buildButton("6"),
+                              ],
+                            ),
+                            new Row(
+                              children: [
+                                buildButton("7"),
+                                buildButton("8"),
+                                buildButton("9"),
+                              ],
+                            ),
+                            new Row(
+                              children: [
+                                buildButton("C"),
+                                buildButton("0"),
+                                buildButton("erase", Icon(Icons.backspace)),
+                              ],
+                            )
+                          ],
+                        )
+                      ),
+                    ],
+                  )
+                )
+              ]
           )
-        ],
-      )
+        )
     );
   }
 
-  _save(String key, double value) async {
+  _save(String key, Map<String, double> data) async {
     final prefs = await SharedPreferences.getInstance();
-    prefs.setDouble(key, value);
+    prefs.setDouble(key, data[key]);
   }
 }

@@ -144,6 +144,7 @@ class _MainState extends State<MainApp>{
       ),
       body: PageView(
           onPageChanged: (index) {
+            FocusScope.of(context).unfocus();
             changePage(index);
           },
           controller: pagecontroller,

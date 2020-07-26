@@ -15,14 +15,22 @@ class _SpendMoneyState extends State<SpendMoneyWidget> {
   NumberFormat moneyNf = NumberFormat.simpleCurrency(decimalDigits: 2);
   final myController = TextEditingController();
   String amount;
-  bool keypadVisibility = true;
 
   @override
   void initState() {
     super.initState();
 
+    widget.data["keypadVisibility"] = 1.0;
+
     KeyboardVisibility.onChange.listen((bool visible) {
-        setState(() {keypadVisibility = !visible;});
+      widget.data["keypadVisibility"] = 1.0;
+      if(visible){
+        widget.data["keypadVisibility"] = 0.0;
+      }
+      if (this.mounted) {
+        setState(() {
+        });
+      }
     });
 
   }
@@ -109,7 +117,7 @@ class _SpendMoneyState extends State<SpendMoneyWidget> {
                           ]
                       ),
                       Visibility (
-                        visible: keypadVisibility,
+                        visible: widget.data["keypadVisibility"] == 1.0,
                         child: new Column(
                           children: [
                             new Row(

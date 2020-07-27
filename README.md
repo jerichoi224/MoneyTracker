@@ -5,7 +5,7 @@ Application for Tracking Daily Money Usage in hope of helping me save money, mad
 ## Basic Overview
 The Basic Idea is that you are able to decide how much you want to be using everyday on average, and the app will let you keep track of how much you've spent/saved daily and monthly.
 
-<img src="https://github.com/jerichoi224/MoneyTracker/blob/master/media/screenshots.png" width=30%>
+<img src="https://github.com/jerichoi224/MoneyTracker/blob/master/media/screenshots.png">
 
 ### Submit Spending
 

@@ -64,7 +64,7 @@ class _SpendMoneyState extends State<SpendMoneyWidget> {
         String content = widget._myController.text.isEmpty
             ? ("No Description")
             : widget._myController.text;
-        widget.data["todaySpent"] += val;
+
         Entry entry = Entry();
 
         DateTime dt = DateTime.now().toLocal();
@@ -73,6 +73,7 @@ class _SpendMoneyState extends State<SpendMoneyWidget> {
         entry.amount = val;
         entry.content = content;
 
+        widget.data["todaySpent"] += val;
         widget.todaySpendings.add(entry);
         _saveDB(entry);
         amount = "0";

@@ -32,6 +32,36 @@ class _TodaySpendingState extends State<TodaySpendingWidget> {
     return Colors.black;
   }
 
+  _popUpMenuButton(Entry i) {
+    return PopupMenuButton(
+      icon: Icon(Icons.more_vert),
+      onSelected: (newValue) { // add this property
+        if(newValue == 1){
+          widget.data["todaySpent"] -= i.amount;
+          widget.todaySpendings.remove(i);
+          _DBDelete(i.id);
+        }
+        setState(() {
+        });
+      },
+      itemBuilder: (context) => [
+        PopupMenuItem(
+          child: Text("Edit"),
+          value: 0,
+        ),
+        PopupMenuItem(
+          child: Text("Delete"),
+          value: 1,
+        ),
+      ],
+    );
+  }
+
+  getTimeText(Entry i){
+    DateTime dt = new DateTime.fromMillisecondsSinceEpoch(i.timestamp);
+    return "\t\t(" + DateFormat('h:mm a').format(dt) + ")";
+  }
+
   List<Widget> spendingHistory(){
     List<Widget> history = new List<Widget>();
     for(Entry i in widget.todaySpendings.reversed){
@@ -41,14 +71,17 @@ class _TodaySpendingState extends State<TodaySpendingWidget> {
               margin: EdgeInsets.all(5.0),
               color: Colors.white,
               child: ListTile(
-                onTap: (){
-
-                },
-                isThreeLine: true,
                 dense: true,
-                title: Text(moneyNf.format(i.amount)),
+                title: RichText(
+                  text: TextSpan(
+                    children: <TextSpan>[
+                      TextSpan(text: moneyNf.format(i.amount), style: TextStyle(color: Colors.black)),
+                      TextSpan(text: getTimeText(i), style: TextStyle(color: Colors.black54)),
+                    ],
+                  ),
+                ),
                 subtitle: Text(i.content),
-                trailing: Icon(Icons.more_vert),
+                trailing: _popUpMenuButton(i)
               )
           )
       );
@@ -81,5 +114,11 @@ class _TodaySpendingState extends State<TodaySpendingWidget> {
         ]
       )
     );
+  }
+
+  _DBDelete(int id) async{
+    DatabaseHelper helper = DatabaseHelper.instance;
+    await helper.delete(id);
+    print("delete entry: " + id.toString());
   }
 }

@@ -71,6 +71,7 @@ class _MainState extends State<MainApp>{
     // TODO: Make user able to choose the date first time app is installed.
     if(data["monthlyResetDate"] == 0) {
       data["monthlyResetDate"] = now.day.toDouble();
+      _saveSP("monthlyResetDate", data);
     }
 
     // If its a new day, accumulate the savings into monthly saving and reset daily
@@ -83,18 +84,13 @@ class _MainState extends State<MainApp>{
       if(data["monthlyResetDate"].toInt() == now.day){
         data["monthlySaved"] = 0;
       }
+      // Save Values
+      _saveSP("todayDate", data);
+      _saveSP("monthlySaved", data);
+      _saveSP("todaySpent", data);
     }
 
-    // This function won't run during this session anymore
-    setState((){
-      ready = true;
-    });
-
-    // Save Values
-    _saveSP("todayDate", data);
-    _saveSP("monthlySaved", data);
-    _saveSP("todaySpent", data);
-    _saveSP("monthlyResetDate", data);
+    setState((){});
   }
 
   // Two Main Screens for the app
@@ -137,8 +133,7 @@ class _MainState extends State<MainApp>{
     }
 
     // Once Data loads, check if its a new day since last run.
-    if(!ready)
-      checkNewDay();
+    checkNewDay();
 
     // App Loads
     return Scaffold(

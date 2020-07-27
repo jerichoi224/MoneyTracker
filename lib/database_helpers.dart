@@ -130,4 +130,11 @@ class DatabaseHelper {
     Database db = await database;
     return await db.delete(tableSpending, where: '$columnId = ?', whereArgs: [id]);
   }
+
+  Future<int> update(Entry entry) async {
+    Database db = await database;
+    return await db.update(tableSpending, entry.toMap(),
+        where: '$columnId = ?', whereArgs: [entry.id]);
+  }
+
 }

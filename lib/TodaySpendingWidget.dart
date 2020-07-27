@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import "package:intl/intl.dart";
+import 'package:money_tracker/EditWidget.dart';
 import 'database_helpers.dart';
 
 class TodaySpendingWidget extends StatefulWidget {
@@ -32,14 +33,46 @@ class _TodaySpendingState extends State<TodaySpendingWidget> {
     return Colors.black;
   }
 
+  void _openEditWidget(Entry item) async {
+    // start the SecondScreen and wait for it to finish with a result
+
+    String oldContent = item.content;
+    double oldAmount = item.amount;
+
+    final Entry result = await Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => EditWidget(item: item),
+        ));
+    if(result.content == oldContent && result.amount == oldAmount){
+      return;
+    }
+
+    for(Entry i in widget.todaySpendings){
+      if(i.id == item.id){
+        print(i.id);
+        i.content = result.content;
+        i.amount = result.amount;
+        _DBUpdate(i);
+      }
+    }
+
+    // Update any values that have changed.
+    setState(() {});
+  }
+
+
   _popUpMenuButton(Entry i) {
     return PopupMenuButton(
       icon: Icon(Icons.more_vert),
-      onSelected: (newValue) { // add this property
-        if(newValue == 1){
+      onSelected: (selectedIndex) { // add this property
+        if(selectedIndex == 1){
           widget.data["todaySpent"] -= i.amount;
           widget.todaySpendings.remove(i);
           _DBDelete(i.id);
+        }
+        else if(selectedIndex == 0){
+          _openEditWidget(i);
         }
         setState(() {
         });
@@ -120,5 +153,11 @@ class _TodaySpendingState extends State<TodaySpendingWidget> {
     DatabaseHelper helper = DatabaseHelper.instance;
     await helper.delete(id);
     print("delete entry: " + id.toString());
+  }
+
+  _DBUpdate(Entry entry) async{
+    DatabaseHelper helper = DatabaseHelper.instance;
+    await helper.update(entry);
+    print("update entry: " + entry.id.toString());
   }
 }

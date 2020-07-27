@@ -1,6 +1,6 @@
 
 <h1 align="center">
-  <a href="https://github.com/jerichoi224/MoneyTracker/blob/master/media/cover.png">
+  <img src="https://github.com/jerichoi224/MoneyTracker/blob/master/media/cover.png">
 </h1>
 
 ![logo](media/cover.png)

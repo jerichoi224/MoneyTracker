@@ -2,10 +2,14 @@ import 'package:flutter/material.dart';
 import "package:intl/intl.dart";
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_keyboard_visibility/flutter_keyboard_visibility.dart';
+import 'database_helpers.dart';
 
 class SpendMoneyWidget extends StatefulWidget {
   final Map<String, double> data;
-  SpendMoneyWidget({Key key, this.data}) : super(key: key);
+  final List<Entry> todaySpendings;
+  final Map<String, String> StringData;
+  final _myController = TextEditingController();
+  SpendMoneyWidget({Key key, this.data, this.todaySpendings, this.StringData}) : super(key: key);
 
   @override
   State createState() => _SpendMoneyState();
@@ -13,7 +17,6 @@ class SpendMoneyWidget extends StatefulWidget {
 
 class _SpendMoneyState extends State<SpendMoneyWidget> {
   NumberFormat moneyNf = NumberFormat.simpleCurrency(decimalDigits: 2);
-  final myController = TextEditingController();
   String amount;
 
   @override
@@ -21,6 +24,7 @@ class _SpendMoneyState extends State<SpendMoneyWidget> {
     super.initState();
 
     widget.data["keypadVisibility"] = 1.0;
+    widget._myController.text = widget.StringData["SpendContent"];
 
     KeyboardVisibility.onChange.listen((bool visible) {
       widget.data["keypadVisibility"] = 1.0;
@@ -54,14 +58,32 @@ class _SpendMoneyState extends State<SpendMoneyWidget> {
         amount = "0";
       }
     }else if(s == "Spend"){
-      widget.data["todaySpent"] += double.parse(amount)/100.0;
-      _save("todaySpent", widget.data);
-      amount = "0";
+      FocusScope.of(context).unfocus();
+      double val = double.parse(amount)/100.0;
+      if(val > 0) {
+        String content = widget._myController.text.isEmpty
+            ? ("No Description")
+            : widget._myController.text;
+        widget.data["todaySpent"] += val;
+        Entry entry = Entry();
+
+        DateTime dt = DateTime.now().toLocal();
+        entry.timestamp = dt.millisecondsSinceEpoch;
+        entry.day = dt.year.toString() + dt.month.toString() + dt.day.toString();
+        entry.amount = val;
+        entry.content = content;
+
+        widget.todaySpendings.add(entry);
+        _saveDB(entry);
+        amount = "0";
+        widget._myController.text = "";
+      }
     }else if(s == "C"){
       amount = "0";
     }else{
       amount += s;
     }
+    widget.StringData["SpendContent"] = widget._myController.text;
     setState(() {
       amount = amount;
       widget.data["SpendValue"] = double.parse(amount);
@@ -71,9 +93,12 @@ class _SpendMoneyState extends State<SpendMoneyWidget> {
   @override
   Widget build(BuildContext context) {
     amount = widget.data["SpendValue"].toInt().toString();
+    widget._myController.text = widget.StringData["SpendContent"];
+    widget._myController.selection = TextSelection.fromPosition(TextPosition(offset: widget._myController.text.length));
 
     return new GestureDetector(
         onTap: () {
+          widget.StringData["SpendContent"] = widget._myController.text;
           FocusScope.of(context).unfocus();
         },
         child:new Container(
@@ -99,12 +124,13 @@ class _SpendMoneyState extends State<SpendMoneyWidget> {
                             children: <Widget>[
                               Flexible(
                                   child: TextField(
-                                    controller: myController,
+                                    controller: widget._myController,
                                     decoration: InputDecoration(
                                       border: const OutlineInputBorder(),
                                       hintText: '(Optional) Enter Description',
                                     ),
                                     textAlign: TextAlign.start,
+
                                   )
                               )
                             ],
@@ -160,8 +186,14 @@ class _SpendMoneyState extends State<SpendMoneyWidget> {
     );
   }
 
-  _save(String key, Map<String, double> data) async {
+  _saveSP(String key, Map<String, double> data) async {
     final prefs = await SharedPreferences.getInstance();
     prefs.setDouble(key, data[key]);
+  }
+
+  _saveDB(Entry entry) async {
+    DatabaseHelper helper = DatabaseHelper.instance;
+    int id = await helper.insert(entry);
+    print('inserted row: $id');
   }
 }

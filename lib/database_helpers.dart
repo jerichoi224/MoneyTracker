@@ -4,32 +4,40 @@ import 'package:sqflite/sqflite.dart';
 import 'package:path_provider/path_provider.dart';
 
 // database table and column names
-final String tableWords = 'words';
+final String tableSpending = 'spendings';
 final String columnId = '_id';
-final String columnWord = 'word';
-final String columnFrequency = 'frequency';
+final String columnTimeStamp = 'timestamp';
+final String columnDay = 'day';
+final String columnAmount = 'amount';
+final String columnContent = 'content';
 
 // data model class
-class Word {
+class Entry {
 
   int id;
-  String word;
-  int frequency;
+  int timestamp;
+  String day;
+  double amount;
+  String content;
 
-  Word();
+  Entry();
 
   // convenience constructor to create a Word object
-  Word.fromMap(Map<String, dynamic> map) {
+  Entry.fromMap(Map<String, dynamic> map) {
     id = map[columnId];
-    word = map[columnWord];
-    frequency = map[columnFrequency];
+    timestamp = map[columnTimeStamp];
+    day = map[columnDay];
+    amount = map[columnAmount];
+    content = map[columnContent];
   }
 
-  // convenience method to create a Map from this Word object
+  // convenience method to create a Map from this object
   Map<String, dynamic> toMap() {
     var map = <String, dynamic>{
-      columnWord: word,
-      columnFrequency: frequency
+      columnTimeStamp: timestamp,
+      columnDay: day,
+      columnAmount: amount,
+      columnContent: content,
     };
     if (id != null) {
       map[columnId] = id;
@@ -42,7 +50,7 @@ class Word {
 class DatabaseHelper {
 
   // This is the actual database filename that is saved in the docs directory.
-  static final _databaseName = "MyDatabase.db";
+  static final _databaseName = "SpendingDatabase.db";
   // Increment this version when you need to change the schema.
   static final _databaseVersion = 1;
 
@@ -72,31 +80,49 @@ class DatabaseHelper {
   // SQL string to create the database
   Future _onCreate(Database db, int version) async {
     await db.execute('''
-              CREATE TABLE $tableWords (
+              CREATE TABLE $tableSpending (
                 $columnId INTEGER PRIMARY KEY,
-                $columnWord TEXT NOT NULL,
-                $columnFrequency INTEGER NOT NULL
+                $columnTimeStamp INTEGER NOT NULL,
+                $columnDay TEXT NOT NULL,
+                $columnAmount REAL NOT NULL,
+                $columnContent TEXT NOT NULL
               )
               ''');
   }
 
   // Database helper methods:
 
-  Future<int> insert(Word word) async {
+  Future<int> insert(Entry entry) async {
     Database db = await database;
-    int id = await db.insert(tableWords, word.toMap());
+    int id = await db.insert(tableSpending, entry.toMap());
     return id;
   }
 
-  Future<Word> queryWord(int id) async {
+  Future<Entry> querySpending(int id) async {
     Database db = await database;
-    List<Map> maps = await db.query(tableWords,
-        columns: [columnId, columnWord, columnFrequency],
+    List<Map> maps = await db.query(tableSpending,
+        columns: [columnId, columnTimeStamp, columnDay, columnAmount, columnContent],
         where: '$columnId = ?',
         whereArgs: [id]);
     if (maps.length > 0) {
-      return Word.fromMap(maps.first);
+      return Entry.fromMap(maps.first);
     }
     return null;
+  }
+
+  Future<List<Entry>> queryDay(String day) async {
+    Database db = await database;
+    List<Map> maps = await db.query(tableSpending,
+        columns: [columnId, columnTimeStamp, columnDay, columnAmount, columnContent],
+        where: '$columnDay = ?',
+        whereArgs: [day]);
+    List<Entry> result = new List<Entry>();
+    if (maps.length > 0) {
+      for(Map i in maps){
+        result.add(Entry.fromMap(i));
+      }
+      return result;
+    }
+    return new List<Entry>();
   }
 }

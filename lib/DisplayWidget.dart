@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import "package:intl/intl.dart";
+import 'database_helpers.dart';
 
 class DisplayWidget extends StatefulWidget {
   final Map<String, double> data;
@@ -33,25 +34,26 @@ class _DisplayState extends State<DisplayWidget> {
   @override
   Widget build(BuildContext context) {
     return Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: <Widget>[
-        Center(
-            child: Text(
-          "Remaining Today",
-          style: TextStyle(
-            fontSize: 20.0,
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: <Widget>[
+          new Padding(
+            padding: new EdgeInsets.fromLTRB(0, 30, 0, 10),
+            child:Center(
+                child: Text("Remaining Today",
+                  style: TextStyle(fontSize: 20.0,),
+                )
+            ),
           ),
-        )),
-        _moneyText(widget.data["dailyLimit"] - widget.data["todaySpent"]),
-        new Padding(padding: new EdgeInsets.all(10.0)),
-        Center(
-            child: Text(
-          "Savings this month",
-          style: TextStyle(
-            fontSize: 20.0,
+          _moneyText(widget.data["dailyLimit"] - widget.data["todaySpent"]),
+          new Padding(
+            padding: new EdgeInsets.fromLTRB(0, 20, 0, 10),
+            child:Center(
+                child: Text("Monthly Saving",
+                  style: TextStyle(fontSize: 20.0,),
+                )
+            ),
           ),
-        )),
-        _moneyText(widget.data["monthlySaved"])
+          _moneyText(widget.data["monthlySaved"]),
       ],
     );
   }

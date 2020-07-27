@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:money_tracker/SpendMoneyWidget.dart';
+import 'package:money_tracker/database_helpers.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'DisplayWidget.dart';
 import 'SpendMoneyWidget.dart';
+import 'TodaySpendingWidget.dart';
 import 'SettingsWidget.dart';
 
 void main() => runApp(MyApp());
@@ -33,7 +35,10 @@ class _MainState extends State<MainApp>{
   final pagecontroller = PageController(initialPage: 0);
   int _currentIndex = 0;
   bool ready = false;
+
+  Map<String, String> StringData;
   Map<String, double> data;
+  List<Entry> todaySpendings;
 
   @override
   void initState(){
@@ -41,14 +46,17 @@ class _MainState extends State<MainApp>{
 
     // Create Map for the session and load the data from Shared Preference.
     data = new Map<String , double>();
-    _read("todayDate").then((val) {setState(() {data["todayDate"] = val;});});
-    _read("todaySpent").then((val) {setState(() {data["todaySpent"] = val;});});
-    _read("dailyLimit").then((val) {setState(() {data["dailyLimit"] = val;});});
-    _read("monthlySaved").then((val) {setState(() {data["monthlySaved"] = val;});});
-    _read("monthlyResetDate").then((val) {setState(() {data["monthlyResetDate"] = val;});});
+    StringData = new Map<String, String>();
+    _readSP("todayDate").then((val) {setState(() {data["todayDate"] = val;});});
+    _readSP("todaySpent").then((val) {setState(() {data["todaySpent"] = val;});});
+    _readSP("dailyLimit").then((val) {setState(() {data["dailyLimit"] = val;});});
+    _readSP("monthlySaved").then((val) {setState(() {data["monthlySaved"] = val;});});
+    _readSP("monthlyResetDate").then((val) {setState(() {data["monthlyResetDate"] = val;});});
 
-    // This value is only available while the app is running.
+    // These value are only available while the app is running.
     data["SpendValue"] = 0;
+    StringData["SpendContent"] = "";
+    _queryDB().then((val){setState(() {todaySpendings = val;});});
   }
 
   // This will run on startup to check if a new day has past.
@@ -83,16 +91,17 @@ class _MainState extends State<MainApp>{
     });
 
     // Save Values
-    _save("todayDate", data);
-    _save("monthlySaved", data);
-    _save("todaySpent", data);
-    _save("monthlyResetDate", data);
+    _saveSP("todayDate", data);
+    _saveSP("monthlySaved", data);
+    _saveSP("todaySpent", data);
+    _saveSP("monthlyResetDate", data);
   }
 
   // Two Main Screens for the app
   List<Widget> _children() => [
-    SpendMoneyWidget(data: data),
+    SpendMoneyWidget(data: data, todaySpendings: todaySpendings, StringData: StringData),
     DisplayWidget(data: data),
+    TodaySpendingWidget(data: data, todaySpendings: todaySpendings,)
   ];
 
   // Navigate to Settings screen
@@ -121,7 +130,7 @@ class _MainState extends State<MainApp>{
     final List<Widget> children = _children();
 
     // While Data is loading, show empty screen
-    if(data == null || data["monthlyResetDate"] == null) {
+    if(data == null || data["monthlyResetDate"] == null || todaySpendings == null) {
       return Scaffold(
           backgroundColor: Color.fromRGBO(149, 213, 178, 1),
       );
@@ -162,6 +171,10 @@ class _MainState extends State<MainApp>{
             icon: new Icon(Icons.insert_chart),
             title: new Text('Display'),
           ),
+          BottomNavigationBarItem(
+            icon: new Icon(Icons.calendar_today),
+            title: new Text('Today'),
+          ),
         ],
       ),
     );
@@ -175,7 +188,7 @@ class _MainState extends State<MainApp>{
   }
 
   // Reading from Shared Preferences
-  Future<double> _read(String key) async {
+  Future<double> _readSP(String key) async {
     final prefs = await SharedPreferences.getInstance();
     double value = prefs.getDouble(key);
     if(value == null){return 0.0;}
@@ -183,9 +196,17 @@ class _MainState extends State<MainApp>{
   }
 
   // Saving to Shared Preferences
-  _save(String key, Map<String, double> data) async {
+  _saveSP(String key, Map<String, double> data) async {
     final prefs = await SharedPreferences.getInstance();
     prefs.setDouble(key, data[key]);
+  }
+
+  Future<List<Entry>> _queryDB() async {
+    DatabaseHelper helper = DatabaseHelper.instance;
+    DateTime dt = DateTime.now().toLocal();
+    String day = dt.year.toString() + dt.month.toString() + dt.day.toString();
+    return await helper.queryDay(day);
+
   }
 }
 

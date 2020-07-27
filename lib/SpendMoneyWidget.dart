@@ -112,7 +112,7 @@ class _SpendMoneyState extends State<SpendMoneyWidget> {
                     children: <Widget>[
 
                       new Container(
-                        padding: new EdgeInsets.fromLTRB(0, 60, 0, 30),
+                        padding: new EdgeInsets.fromLTRB(0, 55, 0, 30),
                         child: new Text(moneyNf.format(double.parse(amount)/100.0),
                           textAlign: TextAlign.center,
                           style: new TextStyle(

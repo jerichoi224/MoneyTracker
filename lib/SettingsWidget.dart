@@ -31,7 +31,6 @@ class _SettingsState extends State<SettingsWidget> {
     double today = double.parse(now.day.toString());
     setState(() {
       widget.data["monthlyResetDate"] = today;
-      widget.data["todaySpent"] = 0.0;
       widget.data["monthlySaved"] = 0.0;
     });
   }

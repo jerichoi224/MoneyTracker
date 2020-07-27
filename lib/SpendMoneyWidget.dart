@@ -75,6 +75,7 @@ class _SpendMoneyState extends State<SpendMoneyWidget> {
 
         widget.data["todaySpent"] += val;
         widget.todaySpendings.add(entry);
+
         _saveDB(entry);
         amount = "0";
         widget._myController.text = "";
@@ -195,6 +196,5 @@ class _SpendMoneyState extends State<SpendMoneyWidget> {
   _saveDB(Entry entry) async {
     DatabaseHelper helper = DatabaseHelper.instance;
     int id = await helper.insert(entry);
-    print('inserted row: $id');
   }
 }

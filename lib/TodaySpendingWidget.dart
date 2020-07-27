@@ -44,13 +44,13 @@ class _TodaySpendingState extends State<TodaySpendingWidget> {
         MaterialPageRoute(
           builder: (context) => EditWidget(item: item),
         ));
+
     if(result.content == oldContent && result.amount == oldAmount){
       return;
     }
 
     for(Entry i in widget.todaySpendings){
-      if(i.id == item.id){
-        print(i.id);
+      if(i.id == result.id){
         i.content = result.content;
         i.amount = result.amount;
         _DBUpdate(i);
@@ -152,12 +152,12 @@ class _TodaySpendingState extends State<TodaySpendingWidget> {
   _DBDelete(int id) async{
     DatabaseHelper helper = DatabaseHelper.instance;
     await helper.delete(id);
-    print("delete entry: " + id.toString());
+//    print("delete entry: " + id.toString());
   }
 
   _DBUpdate(Entry entry) async{
     DatabaseHelper helper = DatabaseHelper.instance;
     await helper.update(entry);
-    print("update entry: " + entry.id.toString());
+//    print("update entry: " + entry.id.toString());
   }
 }

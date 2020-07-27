@@ -116,6 +116,7 @@ class _MainState extends State<MainApp>{
   }
 
   changePage(int index){
+    _queryDB().then((val){setState(() {todaySpendings = val;});});
     setState(() {
       _currentIndex = index;
     });

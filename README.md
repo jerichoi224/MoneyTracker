@@ -1,4 +1,9 @@
-# Money Tracker
+
+<h1 align="center">
+  <a href="https://github.com/jerichoi224/MoneyTracker/blob/master/media/cover.png">
+</h1>
+
+![logo](media/cover.png)
 
 Application for Tracking Daily Money Usage in hope of helping me save money, made with Flutter.
 

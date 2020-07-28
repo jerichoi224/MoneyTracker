@@ -5,7 +5,8 @@ import 'database_helpers.dart';
 class EditWidget extends StatefulWidget {
   final contentController = TextEditingController();
   final amountController = TextEditingController();
-  Entry item;
+  final Entry item;
+
   EditWidget({Key key, this.item}) : super(key: key);
 
   @override
@@ -25,7 +26,7 @@ class _EditState extends State<EditWidget> {
   @override
   Widget build(BuildContext context) {
     widget.amountController.text = widget.item.amount.toString();
-    widget.contentController.text = widget.item.content.toString();
+    widget.contentController.text = widget.item.content == "No Description" ? "" : widget.item.content.toString();
     return WillPopScope(
         onWillPop: (){
           Navigator.pop(context, widget.item);
@@ -93,7 +94,7 @@ class _EditState extends State<EditWidget> {
                                             controller: widget.contentController,
                                             decoration: InputDecoration(
                                               border: InputBorder.none,
-                                              hintText: 'Change Daily Limit',
+                                              hintText: 'Enter what this spending was for',
                                             ),
                                             textAlign: TextAlign.start,
                                           )

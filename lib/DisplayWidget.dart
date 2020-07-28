@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import "package:intl/intl.dart";
-import 'database_helpers.dart';
 
 class DisplayWidget extends StatefulWidget {
   final Map<String, double> data;

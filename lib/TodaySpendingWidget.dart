@@ -152,12 +152,10 @@ class _TodaySpendingState extends State<TodaySpendingWidget> {
   _DBDelete(int id) async{
     DatabaseHelper helper = DatabaseHelper.instance;
     await helper.delete(id);
-//    print("delete entry: " + id.toString());
   }
 
   _DBUpdate(Entry entry) async{
     DatabaseHelper helper = DatabaseHelper.instance;
     await helper.update(entry);
-//    print("update entry: " + entry.id.toString());
   }
 }

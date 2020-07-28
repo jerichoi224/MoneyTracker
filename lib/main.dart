@@ -116,7 +116,13 @@ class _MainState extends State<MainApp>{
   }
 
   changePage(int index){
-    _queryDB().then((val){setState(() {todaySpendings = val;});});
+    if(index == 2) {
+      _queryDB().then((val) {
+        setState(() {
+          todaySpendings = val;
+        });
+      });
+    }
     setState(() {
       _currentIndex = index;
     });
@@ -177,6 +183,13 @@ class _MainState extends State<MainApp>{
   }
 
   void onTabTapped(int index) {
+    if(index == 2) {
+      _queryDB().then((val) {
+        setState(() {
+          todaySpendings = val;
+        });
+      });
+    }
     setState(() {
       _currentIndex = index;
       pagecontroller.animateToPage(index, duration: Duration(milliseconds: 500), curve: Curves.ease);
@@ -202,7 +215,6 @@ class _MainState extends State<MainApp>{
     DateTime dt = DateTime.now().toLocal();
     String day = dt.year.toString() + dt.month.toString() + dt.day.toString();
     return await helper.queryDay(day);
-
   }
 }
 

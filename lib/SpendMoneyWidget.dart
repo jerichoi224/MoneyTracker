@@ -73,10 +73,15 @@ class _SpendMoneyState extends State<SpendMoneyWidget> {
         entry.amount = val;
         entry.content = content;
 
+        // Update values in current session
         widget.data["todaySpent"] += val;
         widget.todaySpendings.add(entry);
 
+        // Update Persistent Data
+        _saveSP("todaySpent", widget.data);
         _saveDB(entry);
+
+        // Reset Amount and Content
         amount = "0";
         widget._myController.text = "";
       }

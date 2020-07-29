@@ -16,7 +16,6 @@ class HomeWidget extends StatefulWidget {
   State createState() => _HomeState();
 }
 
-
 class _HomeState extends State<HomeWidget>{
   final pagecontroller = PageController(initialPage: 0);
   int _currentIndex = 0;
@@ -34,7 +33,6 @@ class _HomeState extends State<HomeWidget>{
     data = new Map<String , double>();
     StringData = new Map<String, String>();
     _readSP("todayDate").then((val) {setState(() {data["todayDate"] = val;});});
-    _readSP("todaySpent").then((val) {setState(() {data["todaySpent"] = val;});});
     _readSP("dailyLimit").then((val) {setState(() {data["dailyLimit"] = val;});});
     _readSP("monthlySaved").then((val) {setState(() {data["monthlySaved"] = val;});});
     _readSP("monthlyResetDate").then((val) {setState(() {data["monthlyResetDate"] = val;});});
@@ -55,9 +53,13 @@ class _HomeState extends State<HomeWidget>{
 
     // If its a new day, accumulate the savings into monthly saving and reset daily
     if(data["todayDate"] == 0 || data["todayDate"] != today){
-      data["monthlySaved"] += (data["dailyLimit"] - data["todaySpent"]);
+      double todaySpent = 0;
+      for(Entry i in todaySpendings){
+        todaySpent += i.amount;
+      }
+
+      data["monthlySaved"] += (data["dailyLimit"] - todaySpent);
       data["todayDate"] = today;
-      data["todaySpent"] = 0;
 
       // Check if today is the monthly reset day
       if(data["monthlyResetDate"].toInt() == now.day){
@@ -66,7 +68,6 @@ class _HomeState extends State<HomeWidget>{
       // Save Values
       _saveSP("todayDate", data);
       _saveSP("monthlySaved", data);
-      _saveSP("todaySpent", data);
       setState((){});
     }
   }
@@ -74,7 +75,7 @@ class _HomeState extends State<HomeWidget>{
   // Two Main Screens for the app
   List<Widget> _children() => [
     SpendMoneyWidget(data: data, todaySpendings: todaySpendings, StringData: StringData),
-    DisplayWidget(data: data),
+    DisplayWidget(data: data, todaySpendings: todaySpendings),
     TodaySpendingWidget(data: data, todaySpendings: todaySpendings,)
   ];
 
@@ -107,14 +108,14 @@ class _HomeState extends State<HomeWidget>{
   }
 
   checkLoaded(){
-    return data == null || data["todaySpent"] == null || todaySpendings == null;
-  }
+    return data == null || todaySpendings == null;
+}
 
   @override
   Widget build(BuildContext context){
     final List<Widget> children = _children();
     if(!ready) {
-      new Timer(new Duration(milliseconds: 300), () {
+      new Timer(new Duration(milliseconds: 500), () {
         ready = true;
         setState(() {});
       });

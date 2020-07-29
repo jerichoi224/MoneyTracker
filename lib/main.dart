@@ -50,12 +50,8 @@ class _MainState extends State<MainApp> {
 
     if (_seen) {
       Navigator.of(context).pushNamedAndRemoveUntil('/home', (Route<dynamic> route) => false);
-//      Navigator.of(context).pushReplacement(
-//          new MaterialPageRoute(builder: (context) => new HomeWidget(data: widget.data)));
     } else {
       Navigator.of(context).pushNamedAndRemoveUntil('/splash', (Route<dynamic> route) => false);
-//      Navigator.of(context).pushReplacement(
-//          new MaterialPageRoute(builder: (context) => new SplashWidget(data: widget.data)));
     }
   }
 

@@ -14,11 +14,10 @@ final String columnContent = 'content';
 // data model class
 class Entry {
 
-  int id;
-  int timestamp;
-  String day;
+  // Five items per spending entry
+  int id, timestamp;
+  String day, content;
   double amount;
-  String content;
 
   Entry();
 
@@ -110,6 +109,7 @@ class DatabaseHelper {
     return null;
   }
 
+  // Get all items from today
   Future<List<Entry>> queryDay(String day) async {
     Database db = await database;
     List<Map> maps = await db.query(tableSpending,

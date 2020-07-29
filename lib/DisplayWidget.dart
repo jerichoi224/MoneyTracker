@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import "package:intl/intl.dart";
+import 'database_helpers.dart';
 
 class DisplayWidget extends StatefulWidget {
   final Map<String, double> data;
+  final List<Entry> todaySpendings;
 
-  DisplayWidget({Key key, this.data}) : super(key: key);
+  DisplayWidget({Key key, this.data, this.todaySpendings}) : super(key: key);
 
   @override
   State createState() => _DisplayState();
@@ -12,15 +14,24 @@ class DisplayWidget extends StatefulWidget {
 
 class _DisplayState extends State<DisplayWidget> {
   NumberFormat moneyNf = NumberFormat.simpleCurrency(decimalDigits: 2);
-  int remaining, saved;
+  double todaySpent;
 
+  void initState() {
+    super.initState();
+
+    // Get the Amount Spent today
+    todaySpent = 0;
+    for(Entry i in widget.todaySpendings){
+      todaySpent += i.amount;
+    }
+  }
+
+  // Currently works for Dollars
   Widget _moneyText(double a) {
     // round value to two decimal
-    int rounded = (a * 100).toInt();
-    a = rounded/100;
-
+    int rounded = (a * 100).round().toInt();
     return Center(
-        child: Text(moneyNf.format(a),
+        child: Text(moneyNf.format(rounded/100.0),
             style: TextStyle(fontSize: 40.0, color: getColor(a))));
   }
 
@@ -43,7 +54,7 @@ class _DisplayState extends State<DisplayWidget> {
                 )
             ),
           ),
-          _moneyText(widget.data["dailyLimit"] - widget.data["todaySpent"]),
+          _moneyText(widget.data["dailyLimit"] - todaySpent),
           new Padding(
             padding: new EdgeInsets.fromLTRB(0, 20, 0, 10),
             child:Center(

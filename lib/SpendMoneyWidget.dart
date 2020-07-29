@@ -61,7 +61,7 @@ class _SpendMoneyState extends State<SpendMoneyWidget> {
       double val = double.parse(amount)/100.0;
       if(val > 0) {
         String content = widget._myController.text.isEmpty
-            ? ("No Description")
+            ? ("")
             : widget._myController.text;
 
         Entry entry = Entry();
@@ -72,12 +72,8 @@ class _SpendMoneyState extends State<SpendMoneyWidget> {
         entry.amount = val;
         entry.content = content;
 
-        // Update values in current session
-        widget.data["todaySpent"] += val;
+        // Save new Entry
         widget.todaySpendings.add(entry);
-
-        // Update Persistent Data
-        _saveSP("todaySpent", widget.data);
         _saveDB(entry);
 
         // Reset Amount and Content

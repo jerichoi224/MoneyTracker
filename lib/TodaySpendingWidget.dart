@@ -50,10 +50,6 @@ class _TodaySpendingState extends State<TodaySpendingWidget> {
       return;
     }
 
-    widget.data["todaySpent"] -= oldAmount;
-    widget.data["todaySpent"] += result.amount;
-    _saveSP("todaySpent", widget.data);
-
     for(Entry i in widget.todaySpendings){
       if(i.id == result.id){
         i.content = result.content;
@@ -71,9 +67,7 @@ class _TodaySpendingState extends State<TodaySpendingWidget> {
       icon: Icon(Icons.more_vert),
       onSelected: (selectedIndex) { // add this property
         if(selectedIndex == 1){
-          widget.data["todaySpent"] -= i.amount;
           widget.todaySpendings.remove(i);
-          _saveSP("todaySpent", widget.data);
           _DBDelete(i.id);
         }
         else if(selectedIndex == 0){
@@ -118,7 +112,7 @@ class _TodaySpendingState extends State<TodaySpendingWidget> {
                     ],
                   ),
                 ),
-                subtitle: Text(i.content),
+                subtitle: Text(i.content == "" ? "No Description" : i.content),
                 trailing: _popUpMenuButton(i)
               )
           )

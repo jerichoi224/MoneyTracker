@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import "package:intl/intl.dart";
 import 'package:money_tracker/EditWidget.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'database_helpers.dart';
 
 class TodaySpendingWidget extends StatefulWidget {
@@ -49,6 +50,10 @@ class _TodaySpendingState extends State<TodaySpendingWidget> {
       return;
     }
 
+    widget.data["todaySpent"] -= oldAmount;
+    widget.data["todaySpent"] += result.amount;
+    _saveSP("todaySpent", widget.data);
+
     for(Entry i in widget.todaySpendings){
       if(i.id == result.id){
         i.content = result.content;
@@ -61,7 +66,6 @@ class _TodaySpendingState extends State<TodaySpendingWidget> {
     setState(() {});
   }
 
-
   _popUpMenuButton(Entry i) {
     return PopupMenuButton(
       icon: Icon(Icons.more_vert),
@@ -69,6 +73,7 @@ class _TodaySpendingState extends State<TodaySpendingWidget> {
         if(selectedIndex == 1){
           widget.data["todaySpent"] -= i.amount;
           widget.todaySpendings.remove(i);
+          _saveSP("todaySpent", widget.data);
           _DBDelete(i.id);
         }
         else if(selectedIndex == 0){
@@ -147,6 +152,12 @@ class _TodaySpendingState extends State<TodaySpendingWidget> {
         ]
       )
     );
+  }
+
+  // Saving to Shared Preferences
+  _saveSP(String key, Map<String, double> data) async {
+    final prefs = await SharedPreferences.getInstance();
+    prefs.setDouble(key, data[key]);
   }
 
   _DBDelete(int id) async{

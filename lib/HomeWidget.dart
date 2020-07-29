@@ -53,16 +53,9 @@ class _HomeState extends State<HomeWidget>{
     //Save current day as double with yyyyMMdd
     double today = double.parse(now.year.toString() + now.month.toString() + now.day.toString());
 
-    // If this is the first time the app runs, monthly reset day is set to today
-    // TODO: Make user able to choose the date first time app is installed.
-    if(data["monthlyResetDate"] == 0) {
-      data["monthlyResetDate"] = now.day.toDouble();
-      _saveSP("monthlyResetDate", data);
-    }
-
     // If its a new day, accumulate the savings into monthly saving and reset daily
     if(data["todayDate"] == 0 || data["todayDate"] != today){
-      data["monthlySaved"] += data["dailyLimit"] - data["todaySpent"];
+      data["monthlySaved"] += (data["dailyLimit"] - data["todaySpent"]);
       data["todayDate"] = today;
       data["todaySpent"] = 0;
 
@@ -74,9 +67,8 @@ class _HomeState extends State<HomeWidget>{
       _saveSP("todayDate", data);
       _saveSP("monthlySaved", data);
       _saveSP("todaySpent", data);
+      setState((){});
     }
-
-    setState((){});
   }
 
   // Two Main Screens for the app
@@ -121,11 +113,12 @@ class _HomeState extends State<HomeWidget>{
   @override
   Widget build(BuildContext context){
     final List<Widget> children = _children();
-    new Timer(new Duration(milliseconds: 300), () {
-      ready = true;
-      setState(() {});
-    });
-
+    if(!ready) {
+      new Timer(new Duration(milliseconds: 300), () {
+        ready = true;
+        setState(() {});
+      });
+    }
     // While Data is loading, show empty screen
     if(checkLoaded() || !ready) {
       return Scaffold(

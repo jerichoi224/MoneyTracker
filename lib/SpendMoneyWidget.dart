@@ -36,7 +36,6 @@ class _SpendMoneyState extends State<SpendMoneyWidget> {
         });
       }
     });
-
   }
 
   Widget buildButton(String s, [Icon i, Color c]){

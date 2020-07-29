@@ -18,8 +18,8 @@ class _SplashState extends State<SplashWidget>{
     super.initState();
 
     var now = DateTime.now().toLocal();
-    //Save current day as double with yyyyMMdd
     widget.data["monthlyResetDate"] = now.day.toDouble();
+    _saveSP("monthlyResetDate", widget.data);
   }
 
   bool isNumeric(String s) {
@@ -33,9 +33,6 @@ class _SplashState extends State<SplashWidget>{
     SharedPreferences prefs = await SharedPreferences.getInstance();
     prefs.setBool('seen', true);
     Navigator.of(context).pushNamedAndRemoveUntil('/home', (Route<dynamic> route) => false);
-
-//    Navigator.of(context).pushReplacement(
-//        new MaterialPageRoute(builder: (context) => new HomeWidget(data: widget.data)));
   }
 
   @override

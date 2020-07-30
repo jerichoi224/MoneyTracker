@@ -3,7 +3,8 @@ import "package:intl/intl.dart";
 import 'package:shared_preferences/shared_preferences.dart';
 
 class SettingsWidget extends StatefulWidget {
-  final myController = TextEditingController();
+  final amountController = TextEditingController();
+  final dateController = TextEditingController();
 
   final Map<String, double> data;
   SettingsWidget({Key key, this.data}) : super(key: key);
@@ -26,13 +27,11 @@ class _SettingsState extends State<SettingsWidget> {
     return num + "th";
   }
 
-  void resetMonthlySpending(){
-    var now = DateTime.now().toLocal();
-    double today = double.parse(now.day.toString());
-    setState(() {
-      widget.data["monthlyResetDate"] = today;
-      widget.data["monthlySaved"] = 0.0;
-    });
+  bool isDate(String s) {
+    if(s == null) {
+      return false;
+    }
+    return int.tryParse(s) != null && int.parse(s) < 32 && int.parse(s) > 0;
   }
 
   bool isNumeric(String s) {
@@ -51,20 +50,41 @@ class _SettingsState extends State<SettingsWidget> {
     Widget continueButton = FlatButton(
       child: Text("Reset"),
       onPressed: (){
-        resetMonthlySpending();
-        _save("monthlyResetDate", widget.data);
-        Navigator.of(context).pop();
-        Scaffold.of(context).showSnackBar(SnackBar(
-          content: Text('Monthly usage reset'),
-          duration: Duration(seconds: 3),
-        ));
+        if(widget.dateController.text.isNotEmpty) {
+          if(isDate(widget.dateController.text)) {
+            widget.data["monthlyResetDate"] =
+                double.parse(widget.dateController.text);
+            widget.data["monthlySaved"] = 0.0;
+            _save("monthlyResetDate", widget.data);
+            _save("monthlySaved", widget.data);
+            Navigator.of(context).pop();
+            setState(() {});
+            Scaffold.of(context).showSnackBar(SnackBar(
+              content: Text('Monthly usage reset'),
+              duration: Duration(seconds: 3),
+            ));
+          }else{
+            Scaffold.of(context).showSnackBar(SnackBar(
+              content: Text('Your input is invalid. Please Check again'),
+              duration: Duration(seconds: 2),
+            ));
+          }
+        }
       },
     );
 
     // set up the AlertDialog
     AlertDialog alert = AlertDialog(
-      title: Text("Confirm Reset"),
-      content: Text("Would you like to reset your Monthly Saving? Your cycle will reset to start today as well."),
+      title: Text("Reset will clear monthly savings",
+          style: TextStyle(
+            fontSize: 18
+          )
+      ),
+      content: new TextField(
+        controller: widget.dateController,
+        decoration: InputDecoration(hintText: "Enter new reset day"),
+        keyboardType: TextInputType.number,
+      ),
       actions: [
         cancelButton,
         continueButton,
@@ -127,7 +147,7 @@ class _SettingsState extends State<SettingsWidget> {
                               children: <Widget>[
                                 Flexible(
                                   child: TextField(
-                                    controller: widget.myController,
+                                    controller: widget.amountController,
                                     decoration: InputDecoration(
                                       border: InputBorder.none,
                                       hintText: 'Change Daily Limit',
@@ -158,6 +178,7 @@ class _SettingsState extends State<SettingsWidget> {
                       ],
                     )
                   ),
+
                   Card(
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8.0)),
                     margin: EdgeInsets.fromLTRB(8, 0, 8, 0),
@@ -167,10 +188,10 @@ class _SettingsState extends State<SettingsWidget> {
                         children: <Widget>[
                           ListTile(
                             onTap:(){
-                              if(widget.myController.text.isNotEmpty) {
-                                if(isNumeric(widget.myController.text)) {
+                              if(widget.amountController.text.isNotEmpty) {
+                                if(isNumeric(widget.amountController.text)) {
                                   widget.data["dailyLimit"] =
-                                      double.parse(widget.myController.text);
+                                      double.parse(widget.amountController.text);
                                   _save("dailyLimit", widget.data);
                                 }else{
                                   Scaffold.of(context).showSnackBar(SnackBar(

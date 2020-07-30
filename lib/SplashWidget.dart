@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:money_tracker/HomeWidget.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import "package:intl/intl.dart";
 
 class SplashWidget extends StatefulWidget {
   final Map<String, double> data;
@@ -18,8 +18,8 @@ class _SplashState extends State<SplashWidget>{
     super.initState();
 
     var now = DateTime.now().toLocal();
-    widget.data["monthlyResetDate"] = now.day.toDouble();
-    _saveSP("monthlyResetDate", widget.data);
+    _saveSP("monthlyResetDate", now.day.toDouble());
+    _saveSP("todayDate", double.parse(DateFormat('yyyyMMdd').format(now)));
   }
 
   bool isNumeric(String s) {
@@ -32,6 +32,7 @@ class _SplashState extends State<SplashWidget>{
   finishSplash() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     prefs.setBool('seen', true);
+    prefs.setDouble("firstDay", DateTime.now().toLocal().millisecondsSinceEpoch.toDouble());
     Navigator.of(context).pushNamedAndRemoveUntil('/home', (Route<dynamic> route) => false);
   }
 
@@ -99,9 +100,7 @@ class _SplashState extends State<SplashWidget>{
                               onTap:(){
                                 if(widget.myController.text.isNotEmpty) {
                                   if(isNumeric(widget.myController.text)) {
-                                    widget.data["dailyLimit"] =
-                                        double.parse(widget.myController.text);
-                                    _saveSP("dailyLimit", widget.data);
+                                    _saveSP("dailyLimit", double.parse(widget.myController.text));
                                     finishSplash();
                                   }else{
                                     Scaffold.of(context).showSnackBar(SnackBar(
@@ -133,9 +132,9 @@ class _SplashState extends State<SplashWidget>{
   }
 
   // Saving to Shared Preferences
-  _saveSP(String key, Map<String, double> data) async {
+  _saveSP(String key, double value) async {
     final prefs = await SharedPreferences.getInstance();
-    prefs.setDouble(key, data[key]);
+    prefs.setDouble(key, value);
   }
 }
 

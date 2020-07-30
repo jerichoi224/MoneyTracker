@@ -8,30 +8,25 @@ import 'package:money_tracker/SplashWidget.dart';
 void main() => runApp(MyApp());
 
 class MyApp extends StatelessWidget{
-  Map<String, double> data;
 
   @override
   Widget build(BuildContext context) {
-    data = new Map<String, double>();
     return MaterialApp(
         debugShowCheckedModeBanner: false,
         title: 'Money Tracker',
         theme: ThemeData(
           primaryColor: Color.fromRGBO(149, 213, 178, 1),
         ),
-        home: MainApp(data: data),
+        home: MainApp(),
         routes: <String, WidgetBuilder>{
-          '/home': (BuildContext context) => new HomeWidget(data: data),
-          '/splash': (BuildContext context) => new SplashWidget(data: data),
+          '/home': (BuildContext context) => new HomeWidget(),
+          '/splash': (BuildContext context) => new SplashWidget(),
         }
       );
   }
 }
 
 class MainApp extends StatefulWidget {
-  final Map<String, double> data;
-  MainApp({Key key, this.data}) : super(key: key);
-
   @override
   State createState() => _MainState();
 }
@@ -41,7 +36,6 @@ class _MainState extends State<MainApp> {
   @override
   void initState() {
     super.initState();
-//    widget.data = new Map<String, double>();
   }
 
   Future checkFirstSeen() async {

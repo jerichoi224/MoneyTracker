@@ -43,6 +43,11 @@ class Entry {
     }
     return map;
   }
+
+  @override
+  String toString() {
+    return "{id: $id, day: $day, amount: $amount, content: $content}";
+  }
 }
 
 // singleton class to manage the database
@@ -137,4 +142,17 @@ class DatabaseHelper {
         where: '$columnId = ?', whereArgs: [entry.id]);
   }
 
+  // Debug Purpose
+  Future<List<Entry>> queryAll() async {
+    Database db = await database;
+    List<Map> maps = await db.rawQuery('SELECT * FROM $tableSpending');
+    List<Entry> result = new List<Entry>();
+    if (maps.length > 0) {
+      for(Map i in maps){
+        result.add(Entry.fromMap(i));
+      }
+      return result;
+    }
+    return new List<Entry>();
+  }
 }

@@ -16,6 +16,7 @@ class EditWidget extends StatefulWidget {
 class _EditState extends State<EditWidget> {
   NumberFormat moneyNf = NumberFormat.simpleCurrency(decimalDigits: 2);
 
+  // Check if the value is numeric
   bool isNumeric(String s) {
     if (s == null) {
       return false;
@@ -28,8 +29,9 @@ class _EditState extends State<EditWidget> {
     widget.amountController.text = widget.item.amount.toString();
     widget.contentController.text = widget.item.content == "No Description" ? "" : widget.item.content.toString();
     return WillPopScope(
-        onWillPop: (){
+        onWillPop: () async{
           Navigator.pop(context, widget.item);
+          return true;
         },
         child: new Scaffold(
             appBar: AppBar(

@@ -35,6 +35,7 @@ class _DisplayState extends State<DisplayWidget> {
             style: TextStyle(fontSize: 40.0, color: getColor(a))));
   }
 
+  // Returns color for text based on the amount.
   Color getColor(i) {
     if (i < 0) return Colors.red;
     if (i > 0) return Colors.lightGreen;

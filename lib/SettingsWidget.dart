@@ -85,8 +85,9 @@ class _SettingsState extends State<SettingsWidget> {
     monthlyReset = getMonthlyResetString();
     currentDaily = moneyNf.format(widget.data["dailyLimit"]);
     return WillPopScope(
-        onWillPop: (){
+        onWillPop: () async{
           Navigator.pop(context, widget.data);
+          return true;
         },
         child: new Scaffold(
           appBar: AppBar(

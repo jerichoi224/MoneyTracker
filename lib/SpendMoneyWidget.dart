@@ -17,6 +17,7 @@ class SpendMoneyWidget extends StatefulWidget {
 
 class _SpendMoneyState extends State<SpendMoneyWidget> {
   NumberFormat moneyNf = NumberFormat.simpleCurrency(decimalDigits: 2);
+
   String amount;
 
   @override
@@ -68,7 +69,7 @@ class _SpendMoneyState extends State<SpendMoneyWidget> {
 
         DateTime dt = DateTime.now().toLocal();
         entry.timestamp = dt.millisecondsSinceEpoch;
-        entry.day = dt.year.toString() + dt.month.toString() + dt.day.toString();
+        entry.day = DateFormat('yyyyMMdd').format(dt);
         entry.amount = val;
         entry.content = content;
 

@@ -48,11 +48,15 @@ class _HomeState extends State<HomeWidget>{
           );
       });
     });});
+    // System Values
     _readSP("dailyLimit").then((val) {setState(() {data["dailyLimit"] = val;});});
     _readSP("monthlySaved").then((val) {setState(() {data["monthlySaved"] = val;});});
     _readSP("monthlyResetDate").then((val) {setState(() {data["monthlyResetDate"] = val;});});
     _readSP("firstDay").then((val) {setState(() {data["firstDay"] = val;});});
+
+    // UI Parameters
     _readSP("disableSave").then((val) {setState(() {data["disableSave"] = val;});});
+    _readSP("historyMode").then((val) {setState(() {data["historyMode"] = val;});});
     _readSP("version").then((val) {setState(() {data["version"] = val;});});
 
     // These value are only available while the app is running.

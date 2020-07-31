@@ -14,10 +14,18 @@ class SettingsWidget extends StatefulWidget {
 }
 
 class _SettingsState extends State<SettingsWidget> {
-  String currentDaily;
-  String monthlyReset;
+  String currentDaily, monthlyReset;
+  bool showSaveButton, showEntireHistory;
 
   NumberFormat moneyNf = NumberFormat.simpleCurrency(decimalDigits: 2);
+
+
+  @override
+  void initState() {
+    super.initState();
+    showSaveButton = widget.data["disableSave"] == 0.0;
+    showEntireHistory = widget.data["historyMode"] == 1.0;
+  }
 
   String getMonthlyResetString(){
     String num = widget.data["monthlyResetDate"].toInt().toString();
@@ -121,7 +129,7 @@ class _SettingsState extends State<SettingsWidget> {
                 children: <Widget>[
                   Container(
                     padding: EdgeInsets.fromLTRB(10, 10, 0, 0),
-                    child: Text("Change System Values",
+                    child: Text("System Values",
                       style: TextStyle(
                           fontWeight: FontWeight.bold,
                           color: Colors.grey
@@ -178,7 +186,59 @@ class _SettingsState extends State<SettingsWidget> {
                       ],
                     )
                   ),
-
+                  Container(
+                      padding: EdgeInsets.fromLTRB(10, 10, 0, 0),
+                      child: Text("System UI",
+                        style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: Colors.grey
+                        ),
+                      )
+                  ),
+                  Card(
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8.0)),
+                      margin: EdgeInsets.all(8.0),
+                      child: Column(
+                        children: <Widget>[
+                          ListTile(
+                              title: new Row(
+                                children: <Widget>[
+                                  new Text("Show Save Button"),
+                                  Spacer(),
+                                  Switch(
+                                    value: showSaveButton,
+                                    onChanged: (value){
+                                      setState(() {
+                                        showSaveButton = value;
+                                      });
+                                    },
+                                    activeTrackColor: Color.fromRGBO(114, 163, 136, 1),
+                                    activeColor: Color.fromRGBO(149, 213, 178, 1),
+                                  ),
+                                ],
+                              )
+                          ),
+                          ListTile(
+                              title: new Row(
+                                children: <Widget>[
+                                  new Text("Show Entire History"),
+                                  Spacer(),
+                                  Switch(
+                                    value: showEntireHistory,
+                                    onChanged: (value){
+                                      setState(() {
+                                        showEntireHistory = value;
+                                      });
+                                    },
+                                    activeTrackColor: Color.fromRGBO(114, 163, 136, 1),
+                                    activeColor: Color.fromRGBO(149, 213, 178, 1),
+                                  ),
+                                ],
+                              )
+                          ),
+                        ],
+                      )
+                  ),
                   Card(
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8.0)),
                     margin: EdgeInsets.fromLTRB(8, 0, 8, 0),
@@ -201,6 +261,21 @@ class _SettingsState extends State<SettingsWidget> {
                                   return;
                                 }
                               }
+
+                              // Checkbox for Disabling Save Button
+                              widget.data["disableSave"] = 1.0;
+                              if(showSaveButton){
+                                widget.data["disableSave"] = 0.0;
+                              }
+                              _save("disableSave", widget.data);
+
+                              // Checkbox for Disabling Save Button
+                              widget.data["historyMode"] = 0.0;
+                              if(showEntireHistory){
+                                widget.data["historyMode"] = 1.0;
+                              }
+                              _save("historyMode", widget.data);
+
                               Navigator.pop(context, widget.data);
                             },
                             title: Text("Save Setting",

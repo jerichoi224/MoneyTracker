@@ -45,19 +45,18 @@ class _SpendingHistoryState extends State<SpendingHistoryWidget> {
     return DateFormat('yyyy/MM/dd').format(dt);
   }
 
-  Widget _moneyText(double a) {
+  TextSpan _moneyText(double a) {
     // round value to two decimal
     int rounded = (a * 100).toInt();
     a = rounded/100;
 
-    return Center(
-        child: Text(moneyNf.format(a),
-            style: TextStyle(color: getColor(a))));
+    return TextSpan(text: moneyNf.format(a),
+            style: TextStyle(color: getColor(a)));
   }
 
   Color getColor(i) {
     if (i < 0) return Colors.red;
-    if (i > 0) return Colors.lightGreen;
+    if (i > 0) return Colors.green;
     return Colors.black;
   }
 
@@ -86,6 +85,13 @@ class _SpendingHistoryState extends State<SpendingHistoryWidget> {
     }
     // Update any values that have changed.
     setState(() {});
+  }
+
+  titleText(){
+    if(widget.data["historyMode"] == 1.0){
+      return "Spending History";
+    }
+    return dayToString(_day) == dayToString(DateTime.now().toLocal()) ? "Today's Spending" : "Spendings on $dayString";
   }
 
   _popUpMenuButton(Entry i) {
@@ -121,33 +127,52 @@ class _SpendingHistoryState extends State<SpendingHistoryWidget> {
 
   List<Widget> spendingHistory(){
     List<Widget> history = new List<Widget>();
+    DateTime tmp = new DateTime(0);
     for(Entry i in tempSpendingList.reversed){
-      if(i.day == DateFormat('yyyyMMdd').format(_day)) {
+      // If In Daily Mode, skip anything from other dates
+      if(widget.data["historyMode"] == 0.0 && i.day != DateFormat('yyyyMMdd').format(_day)){
+        continue;
+      }
+      // If in Entire History Mode, show date changes
+      if(widget.data["historyMode"] == 1.0 && DateFormat('yyyyMMdd').format(tmp)
+          != DateFormat('yyyyMMdd').format(DateTime.fromMillisecondsSinceEpoch(i.timestamp))){
+        tmp = DateTime.fromMillisecondsSinceEpoch(i.timestamp);
         history.add(
-            new Card(
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10.0)),
-                margin: EdgeInsets.all(5.0),
-                color: Colors.white,
-                child: ListTile(
-                    dense: true,
-                    title: RichText(
-                      text: TextSpan(
-                        children: <TextSpan>[
-                          TextSpan(text: moneyNf.format(i.amount),
-                              style: TextStyle(color: Colors.black)),
-                          TextSpan(text: getTimeText(i),
-                              style: TextStyle(color: Colors.black54)),
-                        ],
-                      ),
-                    ),
-                    subtitle: Text(
-                        i.content == "" ? "No Description" : i.content),
-                    trailing: _popUpMenuButton(i)
-                )
+          Padding(
+            padding: EdgeInsets.fromLTRB(0, 5, 0, 5),
+            child: Text(DateFormat('yyyy/MM/dd').format(tmp),
+              style: TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.bold,
+                color: Colors.black54
+              ),
             )
+          )
         );
       }
+      history.add(
+          new Card(
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10.0)),
+              margin: EdgeInsets.all(5.0),
+              color: Colors.white,
+              child: ListTile(
+                  dense: true,
+                  title: RichText(
+                    text: TextSpan(
+                      children: <TextSpan>[
+                        _moneyText(i.amount),
+                        TextSpan(text: getTimeText(i),
+                            style: TextStyle(color: Colors.black54)),
+                      ],
+                    ),
+                  ),
+                  subtitle: Text(
+                      i.content == "" ? "No Description" : i.content),
+                  trailing: _popUpMenuButton(i)
+              )
+          )
+      );
     }
     return history.length > 0 ? history : List.from(
         [Text("Nothing Found!")]);
@@ -162,39 +187,40 @@ class _SpendingHistoryState extends State<SpendingHistoryWidget> {
             padding: EdgeInsets.fromLTRB(0, 25, 0, 20),
             child: ListTile(
               dense: true,
-              leading: IconButton(
-                icon: Icon(Icons.calendar_today),
-                onPressed: (){
-                  showDatePicker(
-                      context: context,
-                      initialDate: _day,
-                      firstDate: firstDate,
-                      lastDate: DateTime.now(),
-                      builder: (BuildContext context, Widget child) {
-                        return Theme(
-                          data: ThemeData.light().copyWith(
-                            colorScheme: ColorScheme.light(
-                              primary: Color.fromRGBO(149, 213, 178, 1),
-                              onPrimary: Colors.white,
+              leading: Visibility(
+                visible: widget.data["historyMode"] == 0.0,
+                child: IconButton(
+                  icon: Icon(Icons.calendar_today),
+                  onPressed: (){
+                    showDatePicker(
+                        context: context,
+                        initialDate: _day,
+                        firstDate: firstDate,
+                        lastDate: DateTime.now(),
+                        builder: (BuildContext context, Widget child) {
+                          return Theme(
+                            data: ThemeData.light().copyWith(
+                              colorScheme: ColorScheme.light(
+                                primary: Color.fromRGBO(149, 213, 178, 1),
+                                onPrimary: Colors.white,
+                              ),
+                              buttonTheme: ButtonThemeData(
+                                  buttonColor: Color.fromRGBO(149, 213, 178, 1),
+                              ),
                             ),
-                            buttonTheme: ButtonThemeData(
-                                buttonColor: Color.fromRGBO(149, 213, 178, 1),
-                            ),
-                          ),
-                          child: child,
-                        );
-                      },
-                  ).then((value) {
-                    setState(() {
-                      _day = value != null? value : _day;
-                      dayString = dayToString(_day);
+                            child: child,
+                          );
+                        },
+                    ).then((value) {
+                      setState(() {
+                        _day = value != null? value : _day;
+                        dayString = dayToString(_day);
+                      });
                     });
-                  });
-                },
+                  },
+                ),
               ),
-              title: Text(
-                    dayToString(_day) == dayToString(DateTime.now().toLocal()) ?
-                    "Today's Spending" : "Spendings on $dayString",
+              title: Text(titleText(),
                   style: TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.bold,

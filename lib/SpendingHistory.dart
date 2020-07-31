@@ -20,12 +20,16 @@ class _TodaySpendingState extends State<SpendingHistoryWidget> {
   String dayString;
   DateTime _day, firstDate;
   List<Entry> tempSpendingList;
+
   @override
   void initState(){
     super.initState();
-    tempSpendingList = new List<Entry>.from(widget.todaySpendings);
-    firstDate = DateTime.fromMillisecondsSinceEpoch(widget.data["firstDay"].toInt());
     _day = DateTime.now().toLocal();
+    tempSpendingList = new List<Entry>();
+    _queryDayDB(DateFormat('yyyyMMdd').format(DateTime.now().toLocal())).then((entries){
+      setState(() {tempSpendingList = entries;}
+      );});
+    firstDate = DateTime.fromMillisecondsSinceEpoch(widget.data["firstDay"].toInt());
   }
 
   String dayToString(DateTime dt){
@@ -81,14 +85,13 @@ class _TodaySpendingState extends State<SpendingHistoryWidget> {
       icon: Icon(Icons.more_vert),
       onSelected: (selectedIndex) { // add this property
         if(selectedIndex == 1){
-          widget.todaySpendings.remove(i);
           _DeleteDB(i.id);
+          tempSpendingList.remove(i);
+          setState(() {});
         }
         else if(selectedIndex == 0){
           _openEditWidget(i);
         }
-        setState(() {
-        });
       },
       itemBuilder: (context) => [
         PopupMenuItem(
@@ -197,15 +200,6 @@ class _TodaySpendingState extends State<SpendingHistoryWidget> {
       )
     );
   }
-
-  // Reading from Shared Preferences
-  Future<dynamic> _readSP(String key) async {
-    final prefs = await SharedPreferences.getInstance();
-    dynamic value = prefs.get(key);
-    if(value == null){return 0.0;}
-    return value;
-  }
-
 
   _DeleteDB(int id) async{
     DatabaseHelper helper = DatabaseHelper.instance;

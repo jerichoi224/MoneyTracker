@@ -4,7 +4,7 @@ import 'database_helpers.dart';
 
 class DisplayWidget extends StatefulWidget {
   final Map<String, double> data;
-  final List<Entry> todaySpendings;
+  List<Entry> todaySpendings;
 
   DisplayWidget({Key key, this.data, this.todaySpendings}) : super(key: key);
 
@@ -21,9 +21,16 @@ class _DisplayState extends State<DisplayWidget> {
 
     // Get the Amount Spent today
     todaySpent = 0;
-    for(Entry i in widget.todaySpendings){
-      todaySpent += i.amount;
-    }
+    _queryDayDB(DateFormat('yyyyMMdd').format(DateTime.now().toLocal())).then((entries){
+
+      setState(() {
+        widget.todaySpendings = entries;
+        for(Entry i in widget.todaySpendings){
+          todaySpent += i.amount;
+        }
+      }
+      );});
+
   }
 
   // Currently works for Dollars
@@ -67,5 +74,10 @@ class _DisplayState extends State<DisplayWidget> {
           _moneyText(widget.data["monthlySaved"]),
       ],
     );
+  }
+
+  Future<List<Entry>> _queryDayDB(String day) async {
+    DatabaseHelper helper = DatabaseHelper.instance;
+    return await helper.queryDay(day);
   }
 }

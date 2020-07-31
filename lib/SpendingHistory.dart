@@ -52,7 +52,7 @@ class _SpendingHistoryState extends State<SpendingHistoryWidget> {
 
     return Center(
         child: Text(moneyNf.format(a),
-            style: TextStyle(fontSize: 40.0, color: getColor(a))));
+            style: TextStyle(color: getColor(a))));
   }
 
   Color getColor(i) {

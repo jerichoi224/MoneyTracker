@@ -61,7 +61,7 @@ class _DisplayState extends State<DisplayWidget> {
                 )
             ),
           ),
-          _moneyText(widget.data["dailyLimit"] - todaySpent),
+          _moneyText(widget.data["dailyLimit"] + todaySpent),
           new Padding(
             padding: new EdgeInsets.fromLTRB(0, 20, 0, 10),
             child:Center(

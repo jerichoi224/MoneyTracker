@@ -37,10 +37,10 @@ class _SpendMoneyState extends State<SpendMoneyWidget> {
     });
   }
 
-  Widget buildButton(String s, [Icon i, Color c]){
+  Widget buildButton(String s, [Icon i, Color c, double fontSize]){
     return new Expanded(
         child: new MaterialButton(
-          child: i == null? new Text(s, style: TextStyle(fontSize: 20.0,),) : i,
+          child: i == null? new Text(s, style: TextStyle(fontSize: fontSize == null? 20.0 : fontSize,),) : i,
           color: c,
           padding: new EdgeInsets.all(20.0),
           onPressed: () => buttonPressed(s),
@@ -55,7 +55,7 @@ class _SpendMoneyState extends State<SpendMoneyWidget> {
       }else{
         amount = "0";
       }
-    }else if(s == "Spend"){
+    }else if(s == "Spend" || s == "Save"){
       FocusScope.of(context).unfocus();
       double val = double.parse(amount)/100.0;
       if(val > 0) {
@@ -64,7 +64,9 @@ class _SpendMoneyState extends State<SpendMoneyWidget> {
             : widget._myController.text;
 
         Entry entry = Entry();
-
+        if(s == "Spend"){
+          val *= -1;
+        }
         DateTime dt = DateTime.now().toLocal();
         entry.timestamp = dt.millisecondsSinceEpoch;
         entry.day = DateFormat('yyyyMMdd').format(dt);
@@ -137,10 +139,24 @@ class _SpendMoneyState extends State<SpendMoneyWidget> {
                           )
                       ),
                       new Expanded(child: new Container()),
-                      new Row(
+
+                      IntrinsicHeight(
+                        child: new Row(
                           children: [
+                            Visibility (
+                              visible: widget.data["disableSave"] == 0.0,
+                             child: buildButton("Save", null, Color.fromRGBO(149, 213, 178, 1)),
+                            ),
+                            Visibility(
+                              visible: widget.data["disableSave"] == 0.0,
+                              child: Container(
+                                width: 1,
+                                color: Colors.black12,
+                              )
+                            ),
                             buildButton("Spend", null, Color.fromRGBO(149, 213, 178, 1)),
                           ]
+                        ),
                       ),
                       Visibility (
                         visible: widget.data["keypadVisibility"] == 1.0,

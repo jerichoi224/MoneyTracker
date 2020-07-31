@@ -19,6 +19,7 @@ class _HomeState extends State<HomeWidget>{
   final pageController = PageController(initialPage: 0);
   int _currentIndex = 0;
   bool ready = false;
+  bool patched = false;
 
   Map<String, String> stringData;
   Map<String, double> data;
@@ -51,6 +52,8 @@ class _HomeState extends State<HomeWidget>{
     _readSP("monthlySaved").then((val) {setState(() {data["monthlySaved"] = val;});});
     _readSP("monthlyResetDate").then((val) {setState(() {data["monthlyResetDate"] = val;});});
     _readSP("firstDay").then((val) {setState(() {data["firstDay"] = val;});});
+    _readSP("disableSave").then((val) {setState(() {data["disableSave"] = val;});});
+    _readSP("version").then((val) {setState(() {data["version"] = val;});});
 
     // These value are only available while the app is running.
     data["SpendValue"] = 0;
@@ -97,6 +100,25 @@ class _HomeState extends State<HomeWidget>{
     }
   }
 
+  patch(){
+    if(data["version"] < 0.4){
+      data["version"] = 0.4;
+      _saveSP("version", 0.4);
+
+      _queryAllDB().then((entries){
+        todaySpending.clear();
+        for(Entry i in entries){
+          i.amount *= -1;
+          _updateDB(i);
+          if(i.day == data["todayDate"].toInt().toString()){
+            todaySpending.add(i);
+          }
+        }
+      });
+    }
+    setState(() {patched = true;});
+  }
+
   // Two Main Screens for the app
   List<Widget> _children() => [
     SpendMoneyWidget(data: data, stringData: stringData),
@@ -132,21 +154,26 @@ class _HomeState extends State<HomeWidget>{
     });
   }
 
-  checkLoaded(){
+  notLoaded(){
     return data == null || todaySpending == null;
   }
 
   @override
   Widget build(BuildContext context){
     final List<Widget> children = _children();
+
+    // Minimum Splash Screen
     if(!ready) {
-      new Timer(new Duration(milliseconds: 700), () {
+      new Timer(new Duration(milliseconds: 500), () {
         ready = true;
         setState(() {});
       });
     }
+    if(!notLoaded()){
+      patch();
+    }
     // While Data is loading, show empty screen
-    if(checkLoaded() || !ready) {
+    if(notLoaded() || !ready || !patched) {
       return Scaffold(
           body: new Column(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -242,9 +269,19 @@ class _HomeState extends State<HomeWidget>{
     return DateFormat('yyyyMMdd').format(dt);
   }
 
+  _updateDB(Entry entry) async{
+    DatabaseHelper helper = DatabaseHelper.instance;
+    await helper.update(entry);
+  }
+
   Future<List<Entry>> _queryDayDB(String day) async {
     DatabaseHelper helper = DatabaseHelper.instance;
     return await helper.queryDay(day);
+  }
+
+  Future<List<Entry>> _queryAllDB() async {
+    DatabaseHelper helper = DatabaseHelper.instance;
+    return await helper.queryAll();
   }
 }
 

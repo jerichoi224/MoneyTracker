@@ -63,7 +63,7 @@ class _EditState extends State<EditWidget> {
                                               controller: widget.amountController,
                                               decoration: InputDecoration(
                                                 border: InputBorder.none,
-                                                hintText: 'Change Daily Limit',
+                                                hintText: 'Spending Amount',
                                               ),
                                               keyboardType: TextInputType.number,
                                               textAlign: TextAlign.start,

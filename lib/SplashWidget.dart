@@ -330,7 +330,7 @@ class _SplashState extends State<SplashWidget>{
   }
 
   // Saving to Shared Preferences
-  _saveSP(String key, double value) async {
+  _saveSP(String key, dynamic value) async {
     final prefs = await SharedPreferences.getInstance();
     prefs.setDouble(key, value);
   }

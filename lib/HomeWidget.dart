@@ -76,8 +76,8 @@ class _HomeState extends State<HomeWidget>{
 
       // If this app hasn't been opened for a few days, gotta add the missing amounts
       DateTime startOfDay = new DateTime(now.year, now.month, now.day);
-      DateTime prev = new DateTime((data["todayDate"]/10000).toInt(),
-          ((data["todayDate"]%10000)/100).toInt(), (data["todayDate"]%100).toInt());
+      DateTime prev = new DateTime((data["todayDate"]~/10000),
+          ((data["todayDate"]%10000)~/100), (data["todayDate"]%100).toInt());
 
       if(startOfDay.difference(prev).inDays > 1){
         data["monthlySaved"] += (startOfDay.difference(prev).inDays - 1) * data["dailyLimit"];
@@ -91,17 +91,17 @@ class _HomeState extends State<HomeWidget>{
         data["monthlySaved"] = 0;
       }
       // Save Values
-      _saveSP("todayDate", data);
-      _saveSP("monthlySaved", data);
+      _saveSP("todayDate", data["todayDate"]);
+      _saveSP("monthlySaved", data["monthlySaved"]);
       setState((){});
     }
   }
 
   // Two Main Screens for the app
   List<Widget> _children() => [
-    SpendMoneyWidget(data: data, todaySpendings: todaySpending, StringData: stringData),
-    DisplayWidget(data: data, todaySpendings: todaySpending),
-    SpendingHistoryWidget(data: data, todaySpendings: todaySpending,)
+    SpendMoneyWidget(data: data, stringData: stringData),
+    DisplayWidget(data: data),
+    SpendingHistoryWidget(data: data)
   ];
 
   // Navigate to Settings screen
@@ -232,9 +232,9 @@ class _HomeState extends State<HomeWidget>{
   }
 
   // Saving to Shared Preferences
-  _saveSP(String key, Map<String, double> data) async {
+  _saveSP(String key, dynamic value) async {
     final prefs = await SharedPreferences.getInstance();
-    prefs.setDouble(key, data[key]);
+    prefs.setDouble(key, value);
   }
 
   String getTodayString(){

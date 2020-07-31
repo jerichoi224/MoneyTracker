@@ -4,9 +4,8 @@ import 'database_helpers.dart';
 
 class DisplayWidget extends StatefulWidget {
   final Map<String, double> data;
-  List<Entry> todaySpendings;
 
-  DisplayWidget({Key key, this.data, this.todaySpendings}) : super(key: key);
+  DisplayWidget({Key key, this.data}) : super(key: key);
 
   @override
   State createState() => _DisplayState();
@@ -15,6 +14,7 @@ class DisplayWidget extends StatefulWidget {
 class _DisplayState extends State<DisplayWidget> {
   NumberFormat moneyNf = NumberFormat.simpleCurrency(decimalDigits: 2);
   double todaySpent;
+  List<Entry> todaySpendings;
 
   void initState() {
     super.initState();
@@ -22,10 +22,9 @@ class _DisplayState extends State<DisplayWidget> {
     // Get the Amount Spent today
     todaySpent = 0;
     _queryDayDB(DateFormat('yyyyMMdd').format(DateTime.now().toLocal())).then((entries){
-
       setState(() {
-        widget.todaySpendings = entries;
-        for(Entry i in widget.todaySpendings){
+        todaySpendings = entries;
+        for(Entry i in todaySpendings){
           todaySpent += i.amount;
         }
       }

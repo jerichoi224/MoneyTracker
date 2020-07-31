@@ -1,20 +1,19 @@
 import 'package:flutter/material.dart';
 import "package:intl/intl.dart";
 import 'package:money_tracker/EditWidget.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'database_helpers.dart';
+import 'package:flutter/services.dart';
 
 class SpendingHistoryWidget extends StatefulWidget {
   final Map<String, double> data;
-  final List<Entry> todaySpendings;
 
-  SpendingHistoryWidget({Key key, this.data, this.todaySpendings}) : super(key: key);
+  SpendingHistoryWidget({Key key, this.data}) : super(key: key);
 
   @override
-  State createState() => _TodaySpendingState();
+  State createState() => _SpendingHistoryState();
 }
 
-class _TodaySpendingState extends State<SpendingHistoryWidget> {
+class _SpendingHistoryState extends State<SpendingHistoryWidget> {
   NumberFormat moneyNf = NumberFormat.simpleCurrency(decimalDigits: 2);
   int remaining, saved;
   String dayString;
@@ -24,11 +23,21 @@ class _TodaySpendingState extends State<SpendingHistoryWidget> {
   @override
   void initState(){
     super.initState();
+
+    SystemChannels.lifecycle.setMessageHandler((msg){
+      if(msg==AppLifecycleState.resumed.toString())
+      setState((){
+        _day = DateTime.now().toLocal();
+      });
+      return null;
+    });
+
     _day = DateTime.now().toLocal();
     tempSpendingList = new List<Entry>();
-    _queryDayDB(DateFormat('yyyyMMdd').format(DateTime.now().toLocal())).then((entries){
-      setState(() {tempSpendingList = entries;}
-      );});
+
+    _queryAllDB().then((entries){
+      setState(() {tempSpendingList = entries;
+      });});
     firstDate = DateTime.fromMillisecondsSinceEpoch(widget.data["firstDay"].toInt());
   }
 
@@ -68,14 +77,13 @@ class _TodaySpendingState extends State<SpendingHistoryWidget> {
       return;
     }
 
-    for(Entry i in widget.todaySpendings){
+    for(Entry i in tempSpendingList){
       if(i.id == result.id){
         i.content = result.content;
         i.amount = result.amount;
-        _UpdateDB(i);
+        _updateDB(i);
       }
     }
-
     // Update any values that have changed.
     setState(() {});
   }
@@ -85,7 +93,7 @@ class _TodaySpendingState extends State<SpendingHistoryWidget> {
       icon: Icon(Icons.more_vert),
       onSelected: (selectedIndex) { // add this property
         if(selectedIndex == 1){
-          _DeleteDB(i.id);
+          _deleteDB(i.id);
           tempSpendingList.remove(i);
           setState(() {});
         }
@@ -114,26 +122,32 @@ class _TodaySpendingState extends State<SpendingHistoryWidget> {
   List<Widget> spendingHistory(){
     List<Widget> history = new List<Widget>();
     for(Entry i in tempSpendingList.reversed){
-      history.add(
-          new Card(
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10.0)),
-              margin: EdgeInsets.all(5.0),
-              color: Colors.white,
-              child: ListTile(
-                dense: true,
-                title: RichText(
-                  text: TextSpan(
-                    children: <TextSpan>[
-                      TextSpan(text: moneyNf.format(i.amount), style: TextStyle(color: Colors.black)),
-                      TextSpan(text: getTimeText(i), style: TextStyle(color: Colors.black54)),
-                    ],
-                  ),
-                ),
-                subtitle: Text(i.content == "" ? "No Description" : i.content),
-                trailing: _popUpMenuButton(i)
-              )
-          )
-      );
+      if(i.day == DateFormat('yyyyMMdd').format(_day)) {
+        history.add(
+            new Card(
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10.0)),
+                margin: EdgeInsets.all(5.0),
+                color: Colors.white,
+                child: ListTile(
+                    dense: true,
+                    title: RichText(
+                      text: TextSpan(
+                        children: <TextSpan>[
+                          TextSpan(text: moneyNf.format(i.amount),
+                              style: TextStyle(color: Colors.black)),
+                          TextSpan(text: getTimeText(i),
+                              style: TextStyle(color: Colors.black54)),
+                        ],
+                      ),
+                    ),
+                    subtitle: Text(
+                        i.content == "" ? "No Description" : i.content),
+                    trailing: _popUpMenuButton(i)
+                )
+            )
+        );
+      }
     }
     return history.length > 0 ? history : List.from(
         [Text("Nothing Found!")]);
@@ -171,12 +185,8 @@ class _TodaySpendingState extends State<SpendingHistoryWidget> {
                         );
                       },
                   ).then((value) {
-                    _day = value != null? value : _day;
-                    _queryDayDB(DateFormat('yyyyMMdd').format(_day)).then((entries){
-                      setState(() {tempSpendingList = entries;}
-                      );
-                    });
                     setState(() {
+                      _day = value != null? value : _day;
                       dayString = dayToString(_day);
                     });
                   });
@@ -201,19 +211,14 @@ class _TodaySpendingState extends State<SpendingHistoryWidget> {
     );
   }
 
-  _DeleteDB(int id) async{
+  _deleteDB(int id) async{
     DatabaseHelper helper = DatabaseHelper.instance;
     await helper.delete(id);
   }
 
-  _UpdateDB(Entry entry) async{
+  _updateDB(Entry entry) async{
     DatabaseHelper helper = DatabaseHelper.instance;
     await helper.update(entry);
-  }
-
-  Future<List<Entry>> _queryDayDB(String day) async {
-    DatabaseHelper helper = DatabaseHelper.instance;
-    return await helper.queryDay(day);
   }
 
   Future<List<Entry>> _queryAllDB() async {

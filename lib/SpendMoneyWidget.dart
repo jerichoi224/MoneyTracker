@@ -1,15 +1,13 @@
 import 'package:flutter/material.dart';
 import "package:intl/intl.dart";
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_keyboard_visibility/flutter_keyboard_visibility.dart';
 import 'database_helpers.dart';
 
 class SpendMoneyWidget extends StatefulWidget {
   final Map<String, double> data;
-  final List<Entry> todaySpendings;
-  final Map<String, String> StringData;
+  final Map<String, String> stringData;
   final _myController = TextEditingController();
-  SpendMoneyWidget({Key key, this.data, this.todaySpendings, this.StringData}) : super(key: key);
+  SpendMoneyWidget({Key key, this.data, this.stringData}) : super(key: key);
 
   @override
   State createState() => _SpendMoneyState();
@@ -25,7 +23,7 @@ class _SpendMoneyState extends State<SpendMoneyWidget> {
     super.initState();
 
     widget.data["keypadVisibility"] = 1.0;
-    widget._myController.text = widget.StringData["SpendContent"];
+    widget._myController.text = widget.stringData["SpendContent"];
 
     KeyboardVisibility.onChange.listen((bool visible) {
       widget.data["keypadVisibility"] = 1.0;
@@ -74,7 +72,6 @@ class _SpendMoneyState extends State<SpendMoneyWidget> {
         entry.content = content;
 
         // Save new Entry
-        widget.todaySpendings.add(entry);
         _saveDB(entry);
 
         // Reset Amount and Content
@@ -86,7 +83,7 @@ class _SpendMoneyState extends State<SpendMoneyWidget> {
     }else{
       amount += s;
     }
-    widget.StringData["SpendContent"] = widget._myController.text;
+    widget.stringData["SpendContent"] = widget._myController.text;
     setState(() {
       amount = amount;
       widget.data["SpendValue"] = double.parse(amount);
@@ -96,12 +93,12 @@ class _SpendMoneyState extends State<SpendMoneyWidget> {
   @override
   Widget build(BuildContext context) {
     amount = widget.data["SpendValue"].toInt().toString();
-    widget._myController.text = widget.StringData["SpendContent"];
+    widget._myController.text = widget.stringData["SpendContent"];
     widget._myController.selection = TextSelection.fromPosition(TextPosition(offset: widget._myController.text.length));
 
     return new GestureDetector(
         onTap: () {
-          widget.StringData["SpendContent"] = widget._myController.text;
+          widget.stringData["SpendContent"] = widget._myController.text;
           FocusScope.of(context).unfocus();
         },
         child:new Container(
@@ -189,13 +186,8 @@ class _SpendMoneyState extends State<SpendMoneyWidget> {
     );
   }
 
-  _saveSP(String key, Map<String, double> data) async {
-    final prefs = await SharedPreferences.getInstance();
-    prefs.setDouble(key, data[key]);
-  }
-
   _saveDB(Entry entry) async {
     DatabaseHelper helper = DatabaseHelper.instance;
-    int id = await helper.insert(entry);
+    await helper.insert(entry);
   }
 }

@@ -11,8 +11,14 @@ import 'dart:async';
 import 'package:flutter/services.dart';
 
 class HomeWidget extends StatefulWidget {
+  final _HomeState myHomeState = new _HomeState();
+
   @override
-  State createState() => _HomeState();
+  State createState() => myHomeState;
+
+  void checkNewDay(){
+    myHomeState.checkNewDay();
+  }
 }
 
 class _HomeState extends State<HomeWidget>{
@@ -20,6 +26,7 @@ class _HomeState extends State<HomeWidget>{
   int _currentIndex = 0;
   bool ready = false;
   bool patched = false;
+  bool loaded = false;
 
   Map<String, String> stringData;
   Map<String, double> data;
@@ -30,38 +37,43 @@ class _HomeState extends State<HomeWidget>{
     super.initState();
 
     SystemChannels.lifecycle.setMessageHandler((msg){
-      if(msg==AppLifecycleState.resumed.toString())
-        setState((){});
+      if(msg==AppLifecycleState.resumed.toString()) {
+        setState(() { checkNewDay();});
+      }
       return null;
     });
 
     // Create Map for the session and load the data from Shared Preference.
     data = new Map<String , double>();
+    data["todaySpent"] = 0.0;
+    data["SpendValue"] = 0;
     stringData = new Map<String, String>();
-    _readSP("todayDate").then((val) {setState(() {
-      data["todayDate"] = val;
-      // Query Today Spendings from DB
-      _queryDayDB(val.toInt().toString()).then((entries){
-          setState(() {
-            todaySpending = entries;
-          }
-          );
-      });
-    });});
+    stringData["SpendContent"] = "";
+
+    loadValues();
+  }
+
+  loadValues(){
     // System Values
     _readSP("dailyLimit").then((val) {setState(() {data["dailyLimit"] = val;});});
-    _readSP("monthlySaved").then((val) {setState(() {data["monthlySaved"] = val;});});
-    _readSP("monthlyResetDate").then((val) {setState(() {data["monthlyResetDate"] = val;});});
-    _readSP("firstDay").then((val) {setState(() {data["firstDay"] = val;});});
+    _readSP("totalSaved").then((val) {setState(() {data["totalSaved"] = val;});});
+    _readSP("todayDate").then((todayDate) {setState(() {
+      data["todayDate"] = todayDate;
+      // Query Today Spendings from DB
+      _queryDBDay(todayDate.toInt().toString()).then((entries){
+        todaySpending = entries;
+        for(Entry i in entries){
+          data["todaySpent"] += i.amount;
+        }
+        setState(() { loaded = true; }
+        );
+      });
+    });});
 
     // UI Parameters
-    _readSP("disableSave").then((val) {setState(() {data["disableSave"] = val;});});
+    _readSP("showSave").then((val) {setState(() {data["showSave"] = val;});});
     _readSP("historyMode").then((val) {setState(() {data["historyMode"] = val;});});
     _readSP("version").then((val) {setState(() {data["version"] = val;});});
-
-    // These value are only available while the app is running.
-    data["SpendValue"] = 0;
-    stringData["SpendContent"] = "";
   }
 
   // This will run on startup to check if a new day has past.
@@ -73,13 +85,11 @@ class _HomeState extends State<HomeWidget>{
     // If its a new day, accumulate the savings into monthly saving and reset daily
     if(data["todayDate"] != today){
       //Get 'yesterday' spending
-      double todaySpent = 0;
-      for(Entry i in todaySpending){
-        todaySpent += i.amount;
-      }
 
-      // Accumulate how much was saved yesterday
-      data["monthlySaved"] += (data["dailyLimit"] - todaySpent);
+     // Accumulate how much was saved yesterday
+      data["totalSaved"] += (data["dailyLimit"] + data["todaySpent"]);
+
+      setState(() {});
 
       // If this app hasn't been opened for a few days, gotta add the missing amounts
       DateTime startOfDay = new DateTime(now.year, now.month, now.day);
@@ -87,39 +97,21 @@ class _HomeState extends State<HomeWidget>{
           ((data["todayDate"]%10000)~/100), (data["todayDate"]%100).toInt());
 
       if(startOfDay.difference(prev).inDays > 1){
-        data["monthlySaved"] += (startOfDay.difference(prev).inDays - 1) * data["dailyLimit"];
+        data["totalSaved"] += (startOfDay.difference(prev).inDays - 1) * data["dailyLimit"];
       }
 
       // New Date and reset
       data["todayDate"] = today;
+      data["todaySpent"] = 0;
 
-      // Check if today is the monthly reset day
-      if(data["monthlyResetDate"].toInt() == now.day){
-        data["monthlySaved"] = 0;
-      }
-      // Save Values
       _saveSP("todayDate", data["todayDate"]);
-      _saveSP("monthlySaved", data["monthlySaved"]);
+      _saveSP("totalSaved", data["totalSaved"]);
       setState((){});
     }
   }
 
   patch(){
-    if(data["version"] < 0.4){
-      data["version"] = 0.4;
-      _saveSP("version", 0.4);
 
-      _queryAllDB().then((entries){
-        todaySpending.clear();
-        for(Entry i in entries){
-          i.amount *= -1;
-          _updateDB(i);
-          if(i.day == data["todayDate"].toInt().toString()){
-            todaySpending.add(i);
-          }
-        }
-      });
-    }
     setState(() {patched = true;});
   }
 
@@ -146,20 +138,9 @@ class _HomeState extends State<HomeWidget>{
   }
 
   changePage(int index){
-    if(index == 2) {
-      _queryDayDB(getTodayString()).then((val) {
-        setState(() {
-          todaySpending = val;
-        });
-      });
-    }
     setState(() {
       _currentIndex = index;
     });
-  }
-
-  notLoaded(){
-    return data == null || todaySpending == null;
   }
 
   @override
@@ -173,11 +154,11 @@ class _HomeState extends State<HomeWidget>{
         setState(() {});
       });
     }
-    if(!notLoaded()){
+    if(loaded){
       patch();
     }
     // While Data is loading, show empty screen
-    if(notLoaded() || !ready || !patched) {
+    if(!loaded || !ready || !patched) {
       return Scaffold(
           body: new Column(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -197,8 +178,7 @@ class _HomeState extends State<HomeWidget>{
 
     // Once Data loads, check if its a new day since last run.
     checkNewDay();
-
-      // App Loads
+    // App Loads
     return Scaffold(
       appBar: AppBar(
         title: Text("Money Tracker"),
@@ -241,13 +221,6 @@ class _HomeState extends State<HomeWidget>{
   }
 
   void onTabTapped(int index) {
-    if(index == 2) {
-      _queryDayDB(getTodayString()).then((val) {
-        setState(() {
-          todaySpending = val;
-        });
-      });
-    }
     setState(() {
       _currentIndex = index;
       pageController.animateToPage(index, duration: Duration(milliseconds: 500), curve: Curves.ease);
@@ -273,19 +246,9 @@ class _HomeState extends State<HomeWidget>{
     return DateFormat('yyyyMMdd').format(dt);
   }
 
-  _updateDB(Entry entry) async{
-    DatabaseHelper helper = DatabaseHelper.instance;
-    await helper.update(entry);
-  }
-
-  Future<List<Entry>> _queryDayDB(String day) async {
+  Future<List<Entry>> _queryDBDay(String day) async {
     DatabaseHelper helper = DatabaseHelper.instance;
     return await helper.queryDay(day);
-  }
-
-  Future<List<Entry>> _queryAllDB() async {
-    DatabaseHelper helper = DatabaseHelper.instance;
-    return await helper.queryAll();
   }
 }
 

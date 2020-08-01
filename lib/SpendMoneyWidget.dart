@@ -67,6 +67,9 @@ class _SpendMoneyState extends State<SpendMoneyWidget> {
         if(s == "Spend"){
           val *= -1;
         }
+
+        widget.data["todaySpent"] += val;
+
         DateTime dt = DateTime.now().toLocal();
         entry.timestamp = dt.millisecondsSinceEpoch;
         entry.day = DateFormat('yyyyMMdd').format(dt);
@@ -144,11 +147,11 @@ class _SpendMoneyState extends State<SpendMoneyWidget> {
                         child: new Row(
                           children: [
                             Visibility (
-                              visible: widget.data["disableSave"] == 0.0,
+                              visible: widget.data["showSave"] == 1.0,
                              child: buildButton("Save", null, Color.fromRGBO(149, 213, 178, 1)),
                             ),
                             Visibility(
-                              visible: widget.data["disableSave"] == 0.0,
+                              visible: widget.data["showSave"] == 1.0,
                               child: Container(
                                 width: 1,
                                 color: Colors.black12,

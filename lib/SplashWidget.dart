@@ -21,7 +21,7 @@ class _SplashState extends State<SplashWidget>{
     super.initState();
 
     var now = DateTime.now().toLocal();
-    _saveSP("monthlyResetDate", now.day.toDouble());
+//    _saveSP("monthlyResetDate", now.day.toDouble());
     _saveSP("todayDate", double.parse(DateFormat('yyyyMMdd').format(now)));
   }
 
@@ -42,7 +42,6 @@ class _SplashState extends State<SplashWidget>{
   finishSplash() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     prefs.setBool('seen', true);
-    prefs.setDouble("firstDay", DateTime.now().toLocal().millisecondsSinceEpoch.toDouble());
     Navigator.of(context).pushNamedAndRemoveUntil('/home', (Route<dynamic> route) => false);
   }
 
@@ -89,9 +88,10 @@ class _SplashState extends State<SplashWidget>{
             padding: EdgeInsets.fromLTRB(40, 10, 40, 10),
             child: Center(
                 child: Text(
-                  "1. Choose your monthly reset date\n"
-                  "2. Set your Daily Limits\n"
-                  "3. Keep recording your spendings",
+//                  "1. Choose your monthly reset date\n"
+                  "1. Set your Daily Limits\n"
+                  "2. Keep recording your spendings\n"
+                  "3. See how much you've saved",
                   style: TextStyle(
                     fontSize: 17,
                     height: 1.4
@@ -310,7 +310,7 @@ class _SplashState extends State<SplashWidget>{
   Widget build(BuildContext context) {
     List<Widget> introPages = <Widget>[
       introScreen(context),
-      monthlyResetDate(context),
+//      monthlyResetDate(context),
       dailyLimit(context),
     ];
     return Scaffold(

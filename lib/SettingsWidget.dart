@@ -15,15 +15,15 @@ class SettingsWidget extends StatefulWidget {
 
 class _SettingsState extends State<SettingsWidget> {
   String currentDaily, monthlyReset;
-  bool showSaveButton, showEntireHistory;
-
+  bool showSaveButton, showEntireHistory, confirmed;
   NumberFormat moneyNf = NumberFormat.simpleCurrency(decimalDigits: 2);
 
 
   @override
   void initState() {
     super.initState();
-    showSaveButton = widget.data["disableSave"] == 0.0;
+    confirmed = false;
+    showSaveButton = widget.data["showSave"] == 1.0;
     showEntireHistory = widget.data["historyMode"] == 1.0;
   }
 
@@ -48,50 +48,30 @@ class _SettingsState extends State<SettingsWidget> {
     }
     return double.tryParse(s) != null;
   }
-
-  showAlertDialog(BuildContext context) {
+/*
+  showAlertDialog(BuildContext context, String newValue) {
     // set up the buttons
     Widget cancelButton = FlatButton(
       child: Text("Cancel"),
-      onPressed:  () {Navigator.of(context).pop();},
+      onPressed:  () {
+        Navigator.of(context).pop();
+        },
     );
     Widget continueButton = FlatButton(
-      child: Text("Reset"),
+      child: Text("Confirm"),
       onPressed: (){
-        if(widget.dateController.text.isNotEmpty) {
-          if(isDate(widget.dateController.text)) {
-            widget.data["monthlyResetDate"] =
-                double.parse(widget.dateController.text);
-            widget.data["monthlySaved"] = 0.0;
-            _save("monthlyResetDate", widget.data);
-            _save("monthlySaved", widget.data);
-            Navigator.of(context).pop();
-            setState(() {});
-            Scaffold.of(context).showSnackBar(SnackBar(
-              content: Text('Monthly usage reset'),
-              duration: Duration(seconds: 3),
-            ));
-          }else{
-            Scaffold.of(context).showSnackBar(SnackBar(
-              content: Text('Your input is invalid. Please Check again'),
-              duration: Duration(seconds: 2),
-            ));
-          }
-        }
+        setState(() {
+        });
+        Navigator.of(context).pop();
       },
     );
 
     // set up the AlertDialog
     AlertDialog alert = AlertDialog(
-      title: Text("Reset will clear monthly savings",
+      title: Text("Text",
           style: TextStyle(
             fontSize: 18
           )
-      ),
-      content: new TextField(
-        controller: widget.dateController,
-        decoration: InputDecoration(hintText: "Enter new reset day"),
-        keyboardType: TextInputType.number,
       ),
       actions: [
         cancelButton,
@@ -107,190 +87,179 @@ class _SettingsState extends State<SettingsWidget> {
       },
     );
   }
-
+*/
   @override
   Widget build(BuildContext context) {
-    monthlyReset = getMonthlyResetString();
     currentDaily = moneyNf.format(widget.data["dailyLimit"]);
     return WillPopScope(
         onWillPop: () async{
           Navigator.pop(context, widget.data);
           return true;
         },
-        child: new Scaffold(
-          appBar: AppBar(
-            title: Text("Settings"),
-          ),
-          body: Builder(
-          builder: (context) =>
-            SingleChildScrollView(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: <Widget>[
-                  Container(
-                    padding: EdgeInsets.fromLTRB(10, 10, 0, 0),
-                    child: Text("System Values",
-                      style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          color: Colors.grey
-                      ),
-                    )
-                  ),
-                  Card(
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8.0)),
-                    margin: EdgeInsets.all(8.0),
-                    child: Column(
-                      children: <Widget>[
-                        ListTile(
-                            title: new Row(
-                              children: <Widget>[
-                                new Text("Current daily limit"),
-                                Spacer(),
-                                new Text("$currentDaily")
-                              ],
-                            )
-                        ),
-                        ListTile(
-                            title: new Row(
-                              children: <Widget>[
-                                Flexible(
-                                  child: TextField(
-                                    controller: widget.amountController,
-                                    decoration: InputDecoration(
-                                      border: InputBorder.none,
-                                      hintText: 'Change Daily Limit',
-                                      ),
-                                    keyboardType: TextInputType.number,
-                                    textAlign: TextAlign.end,
-                                  )
-                                )
-                              ],
-                            )
-                        ),
-                        ListTile(
-                            onTap: (){
-                              showAlertDialog(context);
-                            },
-                            title: new Row(
-                              children: <Widget>[
-                                new Text("Reset Monthly Saving"),
-                                Spacer(),
-                                new Text("Resets on the $monthlyReset",
-                                style: TextStyle(
-                                  color: Colors.grey
-                                ),
-                                )
-                              ],
-                            )
+        child: new GestureDetector(
+              onTap: () {
+              FocusScope.of(context).unfocus();
+              },
+            child: new Scaffold(
+              appBar: AppBar(
+                title: Text("Settings"),
+              ),
+              body: Builder(
+              builder: (context) =>
+                SingleChildScrollView(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: <Widget>[
+                      Container(
+                        padding: EdgeInsets.fromLTRB(10, 10, 0, 0),
+                        child: Text("System Values",
+                          style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color: Colors.grey
+                          ),
                         )
-                      ],
-                    )
-                  ),
-                  Container(
-                      padding: EdgeInsets.fromLTRB(10, 10, 0, 0),
-                      child: Text("System UI",
-                        style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            color: Colors.grey
-                        ),
-                      )
-                  ),
-                  Card(
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8.0)),
-                      margin: EdgeInsets.all(8.0),
-                      child: Column(
-                        children: <Widget>[
-                          ListTile(
-                              title: new Row(
-                                children: <Widget>[
-                                  new Text("Show Save Button"),
-                                  Spacer(),
-                                  Switch(
-                                    value: showSaveButton,
-                                    onChanged: (value){
-                                      setState(() {
-                                        showSaveButton = value;
-                                      });
-                                    },
-                                    activeTrackColor: Color.fromRGBO(114, 163, 136, 1),
-                                    activeColor: Color.fromRGBO(149, 213, 178, 1),
-                                  ),
-                                ],
-                              )
-                          ),
-                          ListTile(
-                              title: new Row(
-                                children: <Widget>[
-                                  new Text("Show Entire History"),
-                                  Spacer(),
-                                  Switch(
-                                    value: showEntireHistory,
-                                    onChanged: (value){
-                                      setState(() {
-                                        showEntireHistory = value;
-                                      });
-                                    },
-                                    activeTrackColor: Color.fromRGBO(114, 163, 136, 1),
-                                    activeColor: Color.fromRGBO(149, 213, 178, 1),
-                                  ),
-                                ],
-                              )
-                          ),
-                        ],
-                      )
-                  ),
-                  Card(
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8.0)),
-                    margin: EdgeInsets.fromLTRB(8, 0, 8, 0),
-                      color: Color.fromRGBO(149, 213, 178, 1),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: <Widget>[
-                          ListTile(
-                            onTap:(){
-                              if(widget.amountController.text.isNotEmpty) {
-                                if(isNumeric(widget.amountController.text)) {
-                                  widget.data["dailyLimit"] =
-                                      double.parse(widget.amountController.text);
-                                  _save("dailyLimit", widget.data);
-                                }else{
-                                  Scaffold.of(context).showSnackBar(SnackBar(
-                                    content: Text('Your input is invalid. Please Check again'),
-                                    duration: Duration(seconds: 3),
-                                  ));
-                                  return;
-                                }
-                              }
-
-                              // Checkbox for Disabling Save Button
-                              widget.data["disableSave"] = 1.0;
-                              if(showSaveButton){
-                                widget.data["disableSave"] = 0.0;
-                              }
-                              _save("disableSave", widget.data);
-
-                              // Checkbox for Disabling Save Button
-                              widget.data["historyMode"] = 0.0;
-                              if(showEntireHistory){
-                                widget.data["historyMode"] = 1.0;
-                              }
-                              _save("historyMode", widget.data);
-
-                              Navigator.pop(context, widget.data);
-                            },
-                            title: Text("Save Setting",
-                              style: TextStyle(
-                                fontSize: 18,
-                              ),
-                              textAlign: TextAlign.center,
-                            )
+                      ),
+                      Card(
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8.0)),
+                        margin: EdgeInsets.all(8.0),
+                        child: Column(
+                          children: <Widget>[
+                            ListTile(
+                                title: new Row(
+                                  children: <Widget>[
+                                    new Text("Current daily limit"),
+                                    Spacer(),
+                                    new Text("$currentDaily")
+                                  ],
+                                )
+                            ),
+                            ListTile(
+                                title: new Row(
+                                  children: <Widget>[
+                                    Flexible(
+                                      child: TextField(
+                                        controller: widget.amountController,
+                                        decoration: InputDecoration(
+                                          border: InputBorder.none,
+                                          hintText: 'Change Daily Limit',
+                                          ),
+                                        keyboardType: TextInputType.numberWithOptions(decimal: true),
+                                        textAlign: TextAlign.end,
+                                      )
+                                    )
+                                  ],
+                                )
+                            ),
+                          ],
+                        )
+                      ),
+                      Container(
+                          padding: EdgeInsets.fromLTRB(10, 10, 0, 0),
+                          child: Text("System UI",
+                            style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                color: Colors.grey
+                            ),
                           )
-                        ]
-                    )
+                      ),
+                      Card(
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8.0)),
+                          margin: EdgeInsets.all(8.0),
+                          child: Column(
+                            children: <Widget>[
+                              ListTile(
+                                  title: new Row(
+                                    children: <Widget>[
+                                      new Text("Show Save Button"),
+                                      Spacer(),
+                                      Switch(
+                                        value: showSaveButton,
+                                        onChanged: (value){
+                                          setState(() {
+                                            showSaveButton = value;
+                                          });
+                                        },
+                                        activeTrackColor: Color.fromRGBO(114, 163, 136, 1),
+                                        activeColor: Color.fromRGBO(149, 213, 178, 1),
+                                      ),
+                                    ],
+                                  )
+                              ),
+                              ListTile(
+                                  title: new Row(
+                                    children: <Widget>[
+                                      new Text("Show Entire History"),
+                                      Spacer(),
+                                      Switch(
+                                        value: showEntireHistory,
+                                        onChanged: (value){
+                                          setState(() {
+                                            showEntireHistory = value;
+                                          });
+                                        },
+                                        activeTrackColor: Color.fromRGBO(114, 163, 136, 1),
+                                        activeColor: Color.fromRGBO(149, 213, 178, 1),
+                                      ),
+                                    ],
+                                  )
+                              ),
+                            ],
+                          )
+                      ),
+                      Card(
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8.0)),
+                        margin: EdgeInsets.fromLTRB(8, 0, 8, 0),
+                          color: Color.fromRGBO(149, 213, 178, 1),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: <Widget>[
+                              ListTile(
+                                onTap:(){
+                                  if(widget.amountController.text.isNotEmpty) {
+                                    if(isNumeric(widget.amountController.text)) {
+                                      widget.data["dailyLimit"] =
+                                          double.parse(widget.amountController.text);
+                                      _save("dailyLimit", widget.data);
+                                    }else{
+                                      Scaffold.of(context).showSnackBar(SnackBar(
+                                        content: Text('Your input is invalid. Please Check again'),
+                                        duration: Duration(seconds: 3),
+                                      ));
+                                      return;
+                                    }
+                                  }
+
+                                  // Checkbox for Disabling Save Button
+                                  widget.data["showSave"] = 0.0;
+                                  if(showSaveButton){
+                                    widget.data["showSave"] = 1.0;
+                                  }
+                                  _save("showSave", widget.data);
+
+                                  // Checkbox for Disabling Save Button
+                                  widget.data["historyMode"] = 0.0;
+                                  if(showEntireHistory){
+                                    widget.data["historyMode"] = 1.0;
+                                  }
+                                  _save("historyMode", widget.data);
+
+
+                                  Navigator.pop(context, widget.data);
+                                },
+                                title: Text("Save Setting",
+                                  style: TextStyle(
+                                    fontSize: 18,
+                                  ),
+                                  textAlign: TextAlign.center,
+                                )
+                              )
+                            ]
+                        )
+                      ),
+                    ],
                   )
-                ],
+                )
               )
-            )
           )
         )
     );

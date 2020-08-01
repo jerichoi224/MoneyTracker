@@ -13,22 +13,24 @@ class SpendingHistoryWidget extends StatefulWidget {
   State createState() => _SpendingHistoryState();
 }
 
-class _SpendingHistoryState extends State<SpendingHistoryWidget> {
+class _SpendingHistoryState extends State<SpendingHistoryWidget> with WidgetsBindingObserver{
   NumberFormat moneyNf = NumberFormat.simpleCurrency(decimalDigits: 2);
   int remaining, saved;
   String dayString;
-  DateTime _day, firstDate;
+  DateTime _day;
   List<Entry> tempSpendingList;
 
   @override
   void initState(){
+    WidgetsBinding.instance.addObserver(this);
     super.initState();
 
     SystemChannels.lifecycle.setMessageHandler((msg){
       if(msg==AppLifecycleState.resumed.toString())
-      setState((){
+      if(this.mounted) {
         _day = DateTime.now().toLocal();
-      });
+        setState(() {});
+      }
       return null;
     });
 
@@ -38,7 +40,12 @@ class _SpendingHistoryState extends State<SpendingHistoryWidget> {
     _queryAllDB().then((entries){
       setState(() {tempSpendingList = entries;
       });});
-    firstDate = DateTime.fromMillisecondsSinceEpoch(widget.data["firstDay"].toInt());
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
   }
 
   String dayToString(DateTime dt){
@@ -70,7 +77,8 @@ class _SpendingHistoryState extends State<SpendingHistoryWidget> {
         context,
         MaterialPageRoute(
           builder: (context) => EditWidget(item: item),
-        ));
+        )
+    );
 
     if(result.content == oldContent && result.amount == oldAmount){
       return;
@@ -80,6 +88,13 @@ class _SpendingHistoryState extends State<SpendingHistoryWidget> {
       if(i.id == result.id){
         i.content = result.content;
         i.amount = result.amount;
+        if(i.day == DateFormat('yyyyMMdd').format(DateTime.now().toLocal())) {
+          widget.data["todaySpent"] -= oldAmount;
+          widget.data["todaySpent"] += result.amount;
+        }else{
+          widget.data["totalSaved"] -= oldAmount;
+          widget.data["totalSaved"] += result.amount;
+        }
         _updateDB(i);
       }
     }
@@ -101,6 +116,10 @@ class _SpendingHistoryState extends State<SpendingHistoryWidget> {
         if(selectedIndex == 1){
           _deleteDB(i.id);
           tempSpendingList.remove(i);
+          if(i.day == DateFormat('yyyyMMdd').format(DateTime.now().toLocal()))
+            widget.data["todaySpent"] -= i.amount;
+          else
+            widget.data["totalSaved"] -= i.amount;
           setState(() {});
         }
         else if(selectedIndex == 0){
@@ -195,7 +214,7 @@ class _SpendingHistoryState extends State<SpendingHistoryWidget> {
                     showDatePicker(
                         context: context,
                         initialDate: _day,
-                        firstDate: firstDate,
+                        firstDate: DateTime(2001),
                         lastDate: DateTime.now(),
                         builder: (BuildContext context, Widget child) {
                           return Theme(

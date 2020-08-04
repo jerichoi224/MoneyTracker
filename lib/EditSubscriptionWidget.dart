@@ -43,7 +43,7 @@ class _EditSubscriptionState extends State<EditSubscriptionWidget> {
       widget.contentController.text = entry.content;
       widget.amountController.text = entry.amount.toString();
       monthlyRenewDay = dt.day;
-      yearlyRenewDate = DateTime(DateTime.now().toLocal().year, DateTime.now().toLocal().month, dt.day);
+      yearlyRenewDate = DateTime(DateTime.now().toLocal().year, dt.month, dt.day);
 
       if(cycle == "monthly"){
         widget.dateController.text= dt.day.toString();
@@ -138,7 +138,6 @@ class _EditSubscriptionState extends State<EditSubscriptionWidget> {
                                               border: InputBorder.none,
                                               hintText: 'What is this for?',
                                             ),
-                                            keyboardType: TextInputType.text,
                                             textAlign: TextAlign.start,
                                           )
                                       )
@@ -206,6 +205,7 @@ class _EditSubscriptionState extends State<EditSubscriptionWidget> {
                                             ),
                                             onChanged: (String newValue) {
                                               setState(() {
+                                                FocusScope.of(context).unfocus();
                                                 cycle = newValue;
                                               });
                                             },
@@ -225,12 +225,16 @@ class _EditSubscriptionState extends State<EditSubscriptionWidget> {
                                     child: ListTile(
                                         title: new Row(
                                           children: <Widget>[
+                                            Text(
+                                                'Subscription Renews on:'
+                                            ),
+                                            Spacer(),
                                             Flexible(
                                                 child: TextField(
                                                   controller: widget.dateController,
                                                   decoration: InputDecoration(
                                                     border: InputBorder.none,
-                                                    hintText: 'What day does the payment renew?',
+                                                    hintText: "Enter Day",
                                                   ),
                                                   textAlign: TextAlign.start,
                                                   keyboardType: TextInputType.numberWithOptions(),
@@ -253,7 +257,7 @@ class _EditSubscriptionState extends State<EditSubscriptionWidget> {
                                         onPressed: (){
                                           showDatePicker(
                                             context: context,
-                                            initialDate: new DateTime.now().toLocal(),
+                                            initialDate: yearlyRenewDate == null ? new DateTime.now().toLocal() : yearlyRenewDate,
                                             firstDate: new DateTime(DateTime.now().toLocal().year, 1, 1),
                                             lastDate: new DateTime(DateTime.now().toLocal().year, 12, 31),
                                             builder: (BuildContext context, Widget child) {
@@ -272,6 +276,7 @@ class _EditSubscriptionState extends State<EditSubscriptionWidget> {
                                             },
                                           ).then((value) {
                                             setState(() {
+                                              FocusScope.of(context).unfocus();
                                               yearlyRenewDate = value;
                                             });
                                           });
@@ -301,7 +306,7 @@ class _EditSubscriptionState extends State<EditSubscriptionWidget> {
                                               return;
                                             }
                                             // Check Date
-                                            if(!isDate(widget.dateController.text)){
+                                            if(cycle == "monthly" && !isDate(widget.dateController.text)){
                                               Scaffold.of(context).showSnackBar(SnackBar(
                                                 content: Text('Your Date is invalid. Please Check again'),
                                                 duration: Duration(seconds: 3),

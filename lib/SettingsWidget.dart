@@ -65,6 +65,7 @@ class _SettingsState extends State<SettingsWidget> {
       widget.subscriptions.add(result);
       setState(() {
         _saveSubscription(result);
+        FocusScope.of(context).unfocus();
       });
     }
   }
@@ -78,6 +79,7 @@ class _SettingsState extends State<SettingsWidget> {
 
   @override
   Widget build(BuildContext context) {
+    FocusScope.of(context).unfocus();
     currentDaily = moneyNf.format(widget.data["dailyLimit"]);
     return WillPopScope(
         onWillPop: () async{

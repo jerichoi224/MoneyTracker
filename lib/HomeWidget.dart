@@ -74,7 +74,7 @@ class _HomeState extends State<HomeWidget>{
       _queryDBDay(todayDate.toInt().toString()).then((entries){
         todaySpending = entries;
         for(SingleEntry i in entries){
-          data["todaySpent"] -= i.amount;
+          data["todaySpent"] += i.amount;
         }
         setState(() {}
         );
@@ -101,9 +101,10 @@ class _HomeState extends State<HomeWidget>{
     subscriptionEntry.amount = i.amount * -1;
     subscriptionEntry.content = i.content + " (Subscription)";
 
-    data["totalSaved"] -= i.amount;
     if(dt.year == DateTime.now().year && dt.month == DateTime.now().month && dt.day == DateTime.now().day){
-      data["todaySpent"] += i.amount;
+      data["todaySpent"] -= i.amount;
+    }else{
+      data["totalSaved"] -= i.amount;
     }
     _saveDB(subscriptionEntry);
   }
@@ -130,21 +131,16 @@ class _HomeState extends State<HomeWidget>{
 
     // If its a new day, accumulate the savings into monthly saving and reset daily
     if(data["todayDate"] != today){
-      print("inside If");
       //Get 'yesterday' spending
       // Accumulate how much was saved yesterday
       data["totalSaved"] += (data["dailyLimit"] + data["todaySpent"]);
+      data["todaySpent"] = 0.0;
 
       for(DateTime dt in calculateDaysInterval(prevDate, DateTime(now.year, now.month, now.day))) {
-        print("DT:" + dt.toString());
-        print(subscriptions);
         for(SubscriptionEntry i in subscriptions){
-          print("sub:" + DateTime.fromMillisecondsSinceEpoch(i.day).toString());
           DateTime renew = DateTime.fromMillisecondsSinceEpoch(i.day);
           if (renew.day == dt.day){
-            print(1);
             if (i.cycle == 0) {
-              print(2);
               addSubscriptionEntry(i, dt);
             } else {
               if (renew.month == dt.month) {
@@ -155,7 +151,6 @@ class _HomeState extends State<HomeWidget>{
         }
         // If this app hasn't been opened for a few days, gotta add the missing amounts
         if(dt != DateTime(now.year, now.month, now.day)){
-          print(dt);
           data["totalSaved"] += data["dailyLimit"];
         }
       }

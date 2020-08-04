@@ -20,10 +20,8 @@ class _DisplayState extends State<DisplayWidget>{
   void initState() {
     SystemChannels.lifecycle.setMessageHandler((msg){
       if(msg==AppLifecycleState.resumed.toString()) {
-        if(this.mounted) {
-          checkNewDay();
-          setState(() {});
-        }
+        checkNewDay();
+        setState(() {});
       }
       return null;
     });
@@ -53,8 +51,14 @@ class _DisplayState extends State<DisplayWidget>{
     SingleEntry subscriptionEntry = new SingleEntry();
     subscriptionEntry.day = DateFormat('yyyyMMdd').format(dt);
     subscriptionEntry.timestamp = DateTime(dt.year, dt.month, dt.day).millisecondsSinceEpoch;
-    subscriptionEntry.amount = i.amount;
+    subscriptionEntry.amount = i.amount * -1;
     subscriptionEntry.content = i.content + " (Subscription)";
+
+    if(dt.year == DateTime.now().year && dt.month == DateTime.now().month && dt.day == DateTime.now().day){
+      widget.data["todaySpent"] -= i.amount;
+    }else{
+      widget.data["totalSaved"] -= i.amount;
+    }
 
     _saveDB(subscriptionEntry);
   }
@@ -74,6 +78,7 @@ class _DisplayState extends State<DisplayWidget>{
       //Get 'yesterday' spending
       // Accumulate how much was saved yesterday
       widget.data["totalSaved"] += (widget.data["dailyLimit"] + widget.data["todaySpent"]);
+      widget.data["todaySpent"] = 0.0;
 
       for(DateTime dt in calculateDaysInterval(prevDate, DateTime(now.year, now.month, now.day))) {
         for(SubscriptionEntry i in widget.subscriptions){
@@ -97,11 +102,14 @@ class _DisplayState extends State<DisplayWidget>{
 
       // New Date and reset
       widget.data["todayDate"] = today;
-      widget.data["todaySpent"] = 0;
 
       _saveSP("todayDate", widget.data["todayDate"]);
       _saveSP("totalSaved", widget.data["totalSaved"]);
-      setState((){});
+      try {
+        setState(() {});
+      }on Exception catch (_) {
+      } catch (error) {
+      }
     }
   }
 

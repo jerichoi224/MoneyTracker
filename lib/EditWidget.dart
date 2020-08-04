@@ -5,7 +5,7 @@ import 'database_helpers.dart';
 class EditWidget extends StatefulWidget {
   final contentController = TextEditingController();
   final amountController = TextEditingController();
-  final Entry item;
+  final SingleEntry item;
 
   EditWidget({Key key, this.item}) : super(key: key);
 

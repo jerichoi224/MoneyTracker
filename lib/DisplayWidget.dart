@@ -2,11 +2,13 @@ import 'package:flutter/material.dart';
 import "package:intl/intl.dart";
 import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:money_tracker/database_helpers.dart';
 
 class DisplayWidget extends StatefulWidget {
   final Map<String, double> data;
+  final List<SubscriptionEntry> subscriptions;
 
-  DisplayWidget({Key key, this.data}) : super(key: key);
+  DisplayWidget({Key key, this.data, this.subscriptions}) : super(key: key);
 
   @override
   State createState() => _DisplayState();
@@ -18,8 +20,10 @@ class _DisplayState extends State<DisplayWidget>{
   void initState() {
     SystemChannels.lifecycle.setMessageHandler((msg){
       if(msg==AppLifecycleState.resumed.toString()) {
-        checkNewDay();
-        setState(() {});
+        if(this.mounted) {
+          checkNewDay();
+          setState(() {});
+        }
       }
       return null;
     });
@@ -32,25 +36,63 @@ class _DisplayState extends State<DisplayWidget>{
     return DateFormat('yyyyMMdd').format(dt);
   }
 
+  List<DateTime> calculateDaysInterval(DateTime startDate, DateTime endDate) {
+    List<DateTime> days = [];
+    DateTime tmp = DateTime(startDate.year, startDate.month, startDate.day, 12);
+    while(DateTime(tmp.year, tmp.month, tmp.day) != endDate){
+      tmp = tmp.add(new Duration(days: 1));
+      days.add(DateTime(tmp.year, tmp.month, tmp.day));
+    }
+
+    return days;
+  }
+
+
+  void addSubscriptionEntry(SubscriptionEntry i, DateTime dt){
+
+    SingleEntry subscriptionEntry = new SingleEntry();
+    subscriptionEntry.day = DateFormat('yyyyMMdd').format(dt);
+    subscriptionEntry.timestamp = DateTime(dt.year, dt.month, dt.day).millisecondsSinceEpoch;
+    subscriptionEntry.amount = i.amount;
+    subscriptionEntry.content = i.content + " (Subscription)";
+
+    _saveDB(subscriptionEntry);
+  }
+
   // This will run on startup to check if a new day has past.
   void checkNewDay(){
     // Date depends on local
     DateTime now = DateTime.now().toLocal();
     double today = double.parse(getTodayString());
 
+    double prev = widget.data["todayDate"];
+    DateTime prevDate = DateTime(prev~/10000, (prev % 10000) ~/100, (prev % 100).toInt());
+
     // If its a new day, accumulate the savings into monthly saving and reset daily
     if(widget.data["todayDate"] != today){
+
+      //Get 'yesterday' spending
+      // Accumulate how much was saved yesterday
       widget.data["totalSaved"] += (widget.data["dailyLimit"] + widget.data["todaySpent"]);
 
-      setState(() {});
-
-      // If this app hasn't been opened for a few days, gotta add the missing amounts
-      DateTime startOfDay = new DateTime(now.year, now.month, now.day);
-      DateTime prev = new DateTime((widget.data["todayDate"]~/10000),
-          ((widget.data["todayDate"]%10000)~/100), (widget.data["todayDate"]%100).toInt());
-
-      if(startOfDay.difference(prev).inDays > 1){
-        widget.data["totalSaved"] += (startOfDay.difference(prev).inDays - 1) * widget.data["dailyLimit"];
+      for(DateTime dt in calculateDaysInterval(prevDate, DateTime(now.year, now.month, now.day))) {
+        for(SubscriptionEntry i in widget.subscriptions){
+          DateTime renew = DateTime.fromMillisecondsSinceEpoch(i.day);
+          if (renew.day == dt.day){
+            if (i.cycle == 0) {
+              addSubscriptionEntry(i, dt);
+            } else {
+              if (renew.month == dt.month) {
+                addSubscriptionEntry(i, dt);
+              }
+            }
+          }
+        }
+        // If this app hasn't been opened for a few days, gotta add the missing amounts
+        if(dt != DateTime(now.year, now.month, now.day)){
+          print(dt);
+          widget.data["totalSaved"] += widget.data["dailyLimit"];
+        }
       }
 
       // New Date and reset
@@ -62,6 +104,7 @@ class _DisplayState extends State<DisplayWidget>{
       setState((){});
     }
   }
+
 
   getRemaining(){
     return widget.data["dailyLimit"] + widget.data["todaySpent"];
@@ -118,5 +161,10 @@ class _DisplayState extends State<DisplayWidget>{
   _saveSP(String key, dynamic value) async {
     final prefs = await SharedPreferences.getInstance();
     prefs.setDouble(key, value);
+  }
+
+  _saveDB(SingleEntry entry) async {
+    DatabaseHelper helper = DatabaseHelper.instance;
+    await helper.insert(entry);
   }
 }

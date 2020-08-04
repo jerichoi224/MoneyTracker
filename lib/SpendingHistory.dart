@@ -18,7 +18,7 @@ class _SpendingHistoryState extends State<SpendingHistoryWidget> with WidgetsBin
   int remaining, saved;
   String dayString;
   DateTime _day;
-  List<Entry> tempSpendingList;
+  List<SingleEntry> tempSpendingList;
 
   @override
   void initState(){
@@ -35,7 +35,7 @@ class _SpendingHistoryState extends State<SpendingHistoryWidget> with WidgetsBin
     });
 
     _day = DateTime.now().toLocal();
-    tempSpendingList = new List<Entry>();
+    tempSpendingList = new List<SingleEntry>();
 
     _queryAllDB().then((entries){
       setState(() {tempSpendingList = entries;
@@ -67,13 +67,13 @@ class _SpendingHistoryState extends State<SpendingHistoryWidget> with WidgetsBin
     return Colors.black;
   }
 
-  void _openEditWidget(Entry item) async {
+  void _openEditWidget(SingleEntry item) async {
     // start the SecondScreen and wait for it to finish with a result
 
     String oldContent = item.content;
     double oldAmount = item.amount;
 
-    final Entry result = await Navigator.push(
+    final SingleEntry result = await Navigator.push(
         context,
         MaterialPageRoute(
           builder: (context) => EditWidget(item: item),
@@ -84,7 +84,7 @@ class _SpendingHistoryState extends State<SpendingHistoryWidget> with WidgetsBin
       return;
     }
 
-    for(Entry i in tempSpendingList){
+    for(SingleEntry i in tempSpendingList){
       if(i.id == result.id){
         i.content = result.content;
         i.amount = result.amount;
@@ -109,7 +109,7 @@ class _SpendingHistoryState extends State<SpendingHistoryWidget> with WidgetsBin
     return dayToString(_day) == dayToString(DateTime.now().toLocal()) ? "Today's Spending" : "Spendings on $dayString";
   }
 
-  _popUpMenuButton(Entry i) {
+  _popUpMenuButton(SingleEntry i) {
     return PopupMenuButton(
       icon: Icon(Icons.more_vert),
       onSelected: (selectedIndex) { // add this property
@@ -139,7 +139,7 @@ class _SpendingHistoryState extends State<SpendingHistoryWidget> with WidgetsBin
     );
   }
 
-  getTimeText(Entry i){
+  getTimeText(SingleEntry i){
     DateTime dt = new DateTime.fromMillisecondsSinceEpoch(i.timestamp);
     return "\t\t(" + DateFormat('h:mm a').format(dt) + ")";
   }
@@ -147,7 +147,7 @@ class _SpendingHistoryState extends State<SpendingHistoryWidget> with WidgetsBin
   List<Widget> spendingHistory(){
     List<Widget> history = new List<Widget>();
     DateTime tmp = new DateTime(0);
-    for(Entry i in tempSpendingList.reversed){
+    for(SingleEntry i in tempSpendingList.reversed){
       // If In Daily Mode, skip anything from other dates
       if(widget.data["historyMode"] == 0.0 && i.day != DateFormat('yyyyMMdd').format(_day)){
         continue;
@@ -258,15 +258,15 @@ class _SpendingHistoryState extends State<SpendingHistoryWidget> with WidgetsBin
 
   _deleteDB(int id) async{
     DatabaseHelper helper = DatabaseHelper.instance;
-    await helper.delete(id);
+    await helper.deleteSingleEntry(id);
   }
 
-  _updateDB(Entry entry) async{
+  _updateDB(SingleEntry entry) async{
     DatabaseHelper helper = DatabaseHelper.instance;
-    await helper.update(entry);
+    await helper.updateSingleEntry(entry);
   }
 
-  Future<List<Entry>> _queryAllDB() async {
+  Future<List<SingleEntry>> _queryAllDB() async {
     DatabaseHelper helper = DatabaseHelper.instance;
     return await helper.queryAll();
   }

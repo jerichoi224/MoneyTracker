@@ -63,7 +63,7 @@ class _SpendMoneyState extends State<SpendMoneyWidget> {
             ? ("")
             : widget._myController.text;
 
-        Entry entry = Entry();
+        SingleEntry entry = SingleEntry();
         if(s == "Spend"){
           val *= -1;
         }
@@ -205,7 +205,7 @@ class _SpendMoneyState extends State<SpendMoneyWidget> {
     );
   }
 
-  _saveDB(Entry entry) async {
+  _saveDB(SingleEntry entry) async {
     DatabaseHelper helper = DatabaseHelper.instance;
     await helper.insert(entry);
   }

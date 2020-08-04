@@ -5,24 +5,27 @@ import 'package:path_provider/path_provider.dart';
 
 // database table and column names
 final String tableSpending = 'spendings';
+final String tableSubscriptions = 'tableSubscriptions';
+
 final String columnId = '_id';
 final String columnTimeStamp = 'timestamp';
 final String columnDay = 'day';
+final String columnCycle = 'cycle';
 final String columnAmount = 'amount';
 final String columnContent = 'content';
 
 // data model class
-class Entry {
+class SingleEntry {
 
   // Five items per spending entry
   int id, timestamp;
   String day, content;
   double amount;
 
-  Entry();
+  SingleEntry();
 
   // convenience constructor to create a Word object
-  Entry.fromMap(Map<String, dynamic> map) {
+  SingleEntry.fromMap(Map<String, dynamic> map) {
     id = map[columnId];
     timestamp = map[columnTimeStamp];
     day = map[columnDay];
@@ -47,6 +50,44 @@ class Entry {
   @override
   String toString() {
     return "{id: $id, day: $day, amount: $amount, content: $content}";
+  }
+}
+
+class SubscriptionEntry {
+
+  // Five items per spending entry
+  int id, cycle, day;
+  String content;
+  double amount;
+
+  SubscriptionEntry();
+
+  // convenience constructor to create a Word object
+  SubscriptionEntry.fromMap(Map<String, dynamic> map) {
+    id = map[columnId];
+    day = map[columnDay];
+    amount = map[columnAmount];
+    content = map[columnContent];
+    cycle = map[columnCycle];
+  }
+
+  // convenience method to create a Map from this object
+  Map<String, dynamic> toMap() {
+    var map = <String, dynamic>{
+      columnDay: day,
+      columnAmount: amount,
+      columnContent: content,
+      columnCycle: cycle,
+    };
+    if (id != null) {
+      map[columnId] = id;
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return "{id: $id, cycle: $cycle, day: $day, amount: $amount, content: $content}";
   }
 }
 
@@ -92,67 +133,106 @@ class DatabaseHelper {
                 $columnContent TEXT NOT NULL
               )
               ''');
+
+    await db.execute('''
+              CREATE TABLE $tableSubscriptions (
+                $columnId INTEGER PRIMARY KEY,
+                $columnDay INTEGER NOT NULL,
+                $columnAmount REAL NOT NULL,
+                $columnContent TEXT NOT NULL,
+                $columnCycle INTEGER NOT NULL
+              )
+              ''');
   }
 
   // Database helper methods:
 
-  Future<int> insert(Entry entry) async {
+  Future<int> insertSubscription(SubscriptionEntry entry) async {
+    Database db = await database;
+    int id = await db.insert(tableSubscriptions, entry.toMap());
+    return id;
+  }
+
+  Future<List<SubscriptionEntry>> queryAllSubscriptions() async {
+    Database db = await database;
+    List<Map> maps = await db.rawQuery('SELECT * FROM $tableSubscriptions');
+    List<SubscriptionEntry> result = new List<SubscriptionEntry>();
+    if (maps.length > 0) {
+      for(Map i in maps){
+        result.add(SubscriptionEntry.fromMap(i));
+      }
+      return result;
+    }
+    return new List<SubscriptionEntry>();
+  }
+
+  Future<int> deleteSubscription(int id) async {
+    Database db = await database;
+    return await db.delete(tableSubscriptions, where: '$columnId = ?', whereArgs: [id]);
+  }
+
+  Future<int> updateSubscription(SubscriptionEntry entry) async {
+    Database db = await database;
+    return await db.update(tableSubscriptions, entry.toMap(),
+        where: '$columnId = ?', whereArgs: [entry.id]);
+  }
+
+  Future<int> insert(SingleEntry entry) async {
     Database db = await database;
     int id = await db.insert(tableSpending, entry.toMap());
     return id;
   }
 
-  Future<Entry> querySpending(int id) async {
+  Future<SingleEntry> querySpending(int id) async {
     Database db = await database;
     List<Map> maps = await db.query(tableSpending,
         columns: [columnId, columnTimeStamp, columnDay, columnAmount, columnContent],
         where: '$columnId = ?',
         whereArgs: [id]);
     if (maps.length > 0) {
-      return Entry.fromMap(maps.first);
+      return SingleEntry.fromMap(maps.first);
     }
     return null;
   }
 
   // Get all items from today
-  Future<List<Entry>> queryDay(String day) async {
+  Future<List<SingleEntry>> queryDay(String day) async {
     Database db = await database;
     List<Map> maps = await db.query(tableSpending,
         columns: [columnId, columnTimeStamp, columnDay, columnAmount, columnContent],
         where: '$columnDay = ?',
         whereArgs: [day]);
-    List<Entry> result = new List<Entry>();
+    List<SingleEntry> result = new List<SingleEntry>();
     if (maps.length > 0) {
       for(Map i in maps){
-        result.add(Entry.fromMap(i));
+        result.add(SingleEntry.fromMap(i));
       }
       return result;
     }
-    return new List<Entry>();
+    return new List<SingleEntry>();
   }
 
-  Future<int> delete(int id) async {
+  Future<int> deleteSingleEntry(int id) async {
     Database db = await database;
     return await db.delete(tableSpending, where: '$columnId = ?', whereArgs: [id]);
   }
 
-  Future<int> update(Entry entry) async {
+  Future<int> updateSingleEntry(SingleEntry entry) async {
     Database db = await database;
     return await db.update(tableSpending, entry.toMap(),
         where: '$columnId = ?', whereArgs: [entry.id]);
   }
 
-  // Debug Purpose
-  Future<List<Entry>> queryAll() async {
+  Future<List<SingleEntry>> queryAll() async {
     Database db = await database;
     List<Map> maps = await db.rawQuery('SELECT * FROM $tableSpending');
-    List<Entry> result = new List<Entry>();
+    List<SingleEntry> result = new List<SingleEntry>();
     if (maps.length > 0) {
       for(Map i in maps){
-        result.add(Entry.fromMap(i));
+        result.add(SingleEntry.fromMap(i));
       }
       return result;
     }
-    return new List<Entry>();
+    return new List<SingleEntry>();
   }
 }

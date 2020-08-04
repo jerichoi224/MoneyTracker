@@ -1,13 +1,17 @@
 import 'package:flutter/material.dart';
 import "package:intl/intl.dart";
+import 'package:money_tracker/EditSubscriptionWidget.dart';
+import 'package:money_tracker/SubscriptionListWidget.dart';
+import 'package:money_tracker/database_helpers.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class SettingsWidget extends StatefulWidget {
   final amountController = TextEditingController();
   final dateController = TextEditingController();
+  final List<SubscriptionEntry> subscriptions;
 
   final Map<String, double> data;
-  SettingsWidget({Key key, this.data}) : super(key: key);
+  SettingsWidget({Key key, this.data, this.subscriptions}) : super(key: key);
 
   @override
   State createState() => _SettingsState();
@@ -17,7 +21,6 @@ class _SettingsState extends State<SettingsWidget> {
   String currentDaily, monthlyReset;
   bool showSaveButton, showEntireHistory, confirmed;
   NumberFormat moneyNf = NumberFormat.simpleCurrency(decimalDigits: 2);
-
 
   @override
   void initState() {
@@ -48,46 +51,31 @@ class _SettingsState extends State<SettingsWidget> {
     }
     return double.tryParse(s) != null;
   }
-/*
-  showAlertDialog(BuildContext context, String newValue) {
-    // set up the buttons
-    Widget cancelButton = FlatButton(
-      child: Text("Cancel"),
-      onPressed:  () {
-        Navigator.of(context).pop();
-        },
-    );
-    Widget continueButton = FlatButton(
-      child: Text("Confirm"),
-      onPressed: (){
-        setState(() {
-        });
-        Navigator.of(context).pop();
-      },
-    );
 
-    // set up the AlertDialog
-    AlertDialog alert = AlertDialog(
-      title: Text("Text",
-          style: TextStyle(
-            fontSize: 18
-          )
-      ),
-      actions: [
-        cancelButton,
-        continueButton,
-      ],
-    );
+  void _openEditSubscription(BuildContext ctx) async{
+    // start the SecondScreen and wait for it to finish with a result
+    final result = await Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => EditSubscriptionWidget(mode: "NEW", item: null, ctx: ctx),
+        ));
 
-    // show the dialog
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return alert;
-      },
+    // Save any new Subscriptions
+    if (result != null) {
+      widget.subscriptions.add(result);
+      setState(() {
+        _saveSubscription(result);
+      });
+    }
+  }
+
+  void _openSubscriptionList(){
+    Navigator.push(context, MaterialPageRoute(
+          builder: (context) => SubscriptionListWidget(subscriptions: widget.subscriptions),
+        )
     );
   }
-*/
+
   @override
   Widget build(BuildContext context) {
     currentDaily = moneyNf.format(widget.data["dailyLimit"]);
@@ -110,6 +98,7 @@ class _SettingsState extends State<SettingsWidget> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: <Widget>[
+                      // System Values
                       Container(
                         padding: EdgeInsets.fromLTRB(10, 10, 0, 0),
                         child: Text("System Values",
@@ -153,6 +142,7 @@ class _SettingsState extends State<SettingsWidget> {
                           ],
                         )
                       ),
+                      // System UI
                       Container(
                           padding: EdgeInsets.fromLTRB(10, 10, 0, 0),
                           child: Text("System UI",
@@ -206,6 +196,44 @@ class _SettingsState extends State<SettingsWidget> {
                             ],
                           )
                       ),
+                      // Manage Subscriptions
+                      Container(
+                          padding: EdgeInsets.fromLTRB(10, 10, 0, 0),
+                          child: Text("Manage Subscriptions",
+                            style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                color: Colors.grey
+                            ),
+                          )
+                      ),
+                      Card(
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8.0)),
+                          margin: EdgeInsets.all(8.0),
+                          child: Column(
+                            children: <Widget>[
+                              ListTile(
+                                onTap: (){
+                                  _openEditSubscription(context);
+                                },
+                                  title: new Row(
+                                    children: <Widget>[
+                                      new Text("Add New Subscription"),
+                                    ],
+                                  )
+                              ),
+                              ListTile(
+                                onTap: (){
+                                  _openSubscriptionList();
+                                },
+                                title: new Row(
+                                  children: <Widget>[
+                                    new Text("View Subscriptions"),
+                                  ],
+                                )
+                              ),
+                            ],
+                          )
+                      ),
                       Card(
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8.0)),
                         margin: EdgeInsets.fromLTRB(8, 0, 8, 0),
@@ -255,7 +283,7 @@ class _SettingsState extends State<SettingsWidget> {
                               )
                             ]
                         )
-                      ),
+                      ),// Save Button
                     ],
                   )
                 )
@@ -264,6 +292,11 @@ class _SettingsState extends State<SettingsWidget> {
         )
     );
   }
+
+  _saveSubscription(SubscriptionEntry entry) async {
+    DatabaseHelper helper = DatabaseHelper.instance;
+    await helper.insertSubscription(entry);
+}
 
   _save(String key, Map<String, double> data) async {
     final prefs = await SharedPreferences.getInstance();

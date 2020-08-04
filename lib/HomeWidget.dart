@@ -26,11 +26,11 @@ class _HomeState extends State<HomeWidget>{
   int _currentIndex = 0;
   bool ready = false;
   bool patched = false;
-  bool loaded = false;
 
   Map<String, String> stringData;
   Map<String, double> data;
-  List<Entry> todaySpending;
+  List<SingleEntry> todaySpending;
+  List<SubscriptionEntry> subscriptions;
 
   @override
   void initState(){
@@ -38,7 +38,11 @@ class _HomeState extends State<HomeWidget>{
 
     SystemChannels.lifecycle.setMessageHandler((msg){
       if(msg==AppLifecycleState.resumed.toString()) {
-        setState(() { checkNewDay();});
+        _queryAllSubscriptionsDB().then((entries){
+          subscriptions = entries;
+          checkNewDay();
+          setState(() {});
+        });
       }
       return null;
     });
@@ -49,6 +53,13 @@ class _HomeState extends State<HomeWidget>{
     data["SpendValue"] = 0;
     stringData = new Map<String, String>();
     stringData["SpendContent"] = "";
+
+    // Reset Values for the subscription
+    _saveSP("SubscriptionContentText", null);
+    _saveSP("SubscriptionAmountText", null);
+    _saveSP("SubscriptionYearlyRenewDate", null);
+    _saveSP("SubscriptionMonthlyRenewDay", null);
+    _saveSP("cycle", null);
 
     loadValues();
   }
@@ -62,18 +73,50 @@ class _HomeState extends State<HomeWidget>{
       // Query Today Spendings from DB
       _queryDBDay(todayDate.toInt().toString()).then((entries){
         todaySpending = entries;
-        for(Entry i in entries){
-          data["todaySpent"] += i.amount;
+        for(SingleEntry i in entries){
+          data["todaySpent"] -= i.amount;
         }
-        setState(() { loaded = true; }
+        setState(() {}
         );
       });
     });});
+
+    _queryAllSubscriptionsDB().then((entries){
+      setState(() {
+        subscriptions = entries;
+      });
+    });
 
     // UI Parameters
     _readSP("showSave").then((val) {setState(() {data["showSave"] = val;});});
     _readSP("historyMode").then((val) {setState(() {data["historyMode"] = val;});});
     _readSP("version").then((val) {setState(() {data["version"] = val;});});
+  }
+
+  void addSubscriptionEntry(SubscriptionEntry i, DateTime dt){
+
+    SingleEntry subscriptionEntry = new SingleEntry();
+    subscriptionEntry.day = DateFormat('yyyyMMdd').format(dt);
+    subscriptionEntry.timestamp = DateTime(dt.year, dt.month, dt.day).millisecondsSinceEpoch;
+    subscriptionEntry.amount = i.amount * -1;
+    subscriptionEntry.content = i.content + " (Subscription)";
+
+    data["totalSaved"] -= i.amount;
+    if(dt.year == DateTime.now().year && dt.month == DateTime.now().month && dt.day == DateTime.now().day){
+      data["todaySpent"] += i.amount;
+    }
+    _saveDB(subscriptionEntry);
+  }
+
+  List<DateTime> calculateDaysInterval(DateTime startDate, DateTime endDate) {
+    List<DateTime> days = [];
+    DateTime tmp = DateTime(startDate.year, startDate.month, startDate.day, 12);
+    while(DateTime(tmp.year, tmp.month, tmp.day) != endDate){
+      tmp = tmp.add(new Duration(days: 1));
+      days.add(DateTime(tmp.year, tmp.month, tmp.day));
+    }
+
+    return days;
   }
 
   // This will run on startup to check if a new day has past.
@@ -82,27 +125,43 @@ class _HomeState extends State<HomeWidget>{
     DateTime now = DateTime.now().toLocal();
     double today = double.parse(getTodayString());
 
+    double prev = data["todayDate"];
+    DateTime prevDate = DateTime(prev~/10000, (prev % 10000) ~/100, (prev % 100).toInt());
+
     // If its a new day, accumulate the savings into monthly saving and reset daily
     if(data["todayDate"] != today){
+      print("inside If");
       //Get 'yesterday' spending
-
-     // Accumulate how much was saved yesterday
+      // Accumulate how much was saved yesterday
       data["totalSaved"] += (data["dailyLimit"] + data["todaySpent"]);
 
-      setState(() {});
-
-      // If this app hasn't been opened for a few days, gotta add the missing amounts
-      DateTime startOfDay = new DateTime(now.year, now.month, now.day);
-      DateTime prev = new DateTime((data["todayDate"]~/10000),
-          ((data["todayDate"]%10000)~/100), (data["todayDate"]%100).toInt());
-
-      if(startOfDay.difference(prev).inDays > 1){
-        data["totalSaved"] += (startOfDay.difference(prev).inDays - 1) * data["dailyLimit"];
+      for(DateTime dt in calculateDaysInterval(prevDate, DateTime(now.year, now.month, now.day))) {
+        print("DT:" + dt.toString());
+        print(subscriptions);
+        for(SubscriptionEntry i in subscriptions){
+          print("sub:" + DateTime.fromMillisecondsSinceEpoch(i.day).toString());
+          DateTime renew = DateTime.fromMillisecondsSinceEpoch(i.day);
+          if (renew.day == dt.day){
+            print(1);
+            if (i.cycle == 0) {
+              print(2);
+              addSubscriptionEntry(i, dt);
+            } else {
+              if (renew.month == dt.month) {
+                addSubscriptionEntry(i, dt);
+              }
+            }
+          }
+        }
+        // If this app hasn't been opened for a few days, gotta add the missing amounts
+        if(dt != DateTime(now.year, now.month, now.day)){
+          print(dt);
+          data["totalSaved"] += data["dailyLimit"];
+        }
       }
 
       // New Date and reset
       data["todayDate"] = today;
-      data["todaySpent"] = 0;
 
       _saveSP("todayDate", data["todayDate"]);
       _saveSP("totalSaved", data["totalSaved"]);
@@ -118,7 +177,7 @@ class _HomeState extends State<HomeWidget>{
   // Two Main Screens for the app
   List<Widget> _children() => [
     SpendMoneyWidget(data: data, stringData: stringData),
-    DisplayWidget(data: data),
+    DisplayWidget(data: data, subscriptions: subscriptions),
     SpendingHistoryWidget(data: data)
   ];
 
@@ -128,7 +187,7 @@ class _HomeState extends State<HomeWidget>{
     final result = await Navigator.push(
         context,
         MaterialPageRoute(
-          builder: (context) => SettingsWidget(data: data),
+          builder: (context) => SettingsWidget(data: data, subscriptions: subscriptions),
         ));
 
     // Update any values that have changed.
@@ -143,6 +202,10 @@ class _HomeState extends State<HomeWidget>{
     });
   }
 
+  isLoaded(){
+    return subscriptions != null && todaySpending != null;
+  }
+
   @override
   Widget build(BuildContext context){
     final List<Widget> children = _children();
@@ -154,11 +217,11 @@ class _HomeState extends State<HomeWidget>{
         setState(() {});
       });
     }
-    if(loaded){
+    if(isLoaded()){
       patch();
     }
     // While Data is loading, show empty screen
-    if(!loaded || !ready || !patched) {
+    if(!isLoaded() || !ready || !patched) {
       return Scaffold(
           body: new Column(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -238,7 +301,12 @@ class _HomeState extends State<HomeWidget>{
   // Saving to Shared Preferences
   _saveSP(String key, dynamic value) async {
     final prefs = await SharedPreferences.getInstance();
-    prefs.setDouble(key, value);
+
+    if(value is String) {prefs.setString(key, value);}
+    else if(value is bool) {prefs.setBool(key, value);}
+    else if(value is int) {prefs.setInt(key, value);}
+    else if(value is double) {prefs.setDouble(key, value);}
+    else {prefs.setStringList(key, value);}
   }
 
   String getTodayString(){
@@ -246,9 +314,19 @@ class _HomeState extends State<HomeWidget>{
     return DateFormat('yyyyMMdd').format(dt);
   }
 
-  Future<List<Entry>> _queryDBDay(String day) async {
+  Future<List<SingleEntry>> _queryDBDay(String day) async {
     DatabaseHelper helper = DatabaseHelper.instance;
     return await helper.queryDay(day);
+  }
+
+  Future<List<SubscriptionEntry>> _queryAllSubscriptionsDB() async {
+    DatabaseHelper helper = DatabaseHelper.instance;
+    return await helper.queryAllSubscriptions();
+  }
+
+  _saveDB(SingleEntry entry) async {
+    DatabaseHelper helper = DatabaseHelper.instance;
+    await helper.insert(entry);
   }
 }
 

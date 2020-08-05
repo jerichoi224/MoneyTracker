@@ -6,22 +6,24 @@
 Application for Tracking Daily Money Usage in hope of helping me save money, made with Flutter.
 [Available in Google Play Store](https://play.google.com/store/apps/details?id=com.kahluabear.money_tracker&ah=Q-xAfI_2q4fv8B5SXuzCaEp0gTk)
 ## Basic Overview
-The Basic Idea is that you are able to decide how much you want to be using everyday on average, and the app will let you keep track of how much you've spent/saved daily and monthly.
+The Basic Idea is that you are able to decide how much you want to be using everyday on average, and the app will let you keep track of how much you've spent/saved daily and overall.
 
-<img src="https://github.com/jerichoi224/MoneyTracker/blob/master/media/screenshots.png">
+<img src="https://github.com/jerichoi224/MoneyTracker/blob/master/media/screenshots1.jpeg">
 
-### Submit Spending
+### Basic Functionality
 
-The screen to submit your spending is always the first screen to show so that you can quickly submit the amount you've just spent and continue with your day. The description box is optional, and you odn't have to enter it at the moment. You'll have an option to edit it later in the day.
+The three screenshots above show the basic functionality of the app. You Record your spendings, on the left. You can see how much you have left today and how much you've saved so far in the middle, and see all your previous spendings on the right. For hte Display portion, "Remaining Today" will show the value of the daily limit subtracted by the amount you've spent today. At midnight, whatever is remaining from the day will get added to the "Total Savings."
 
-### Show your Savings
+<img src="https://github.com/jerichoi224/MoneyTracker/blob/master/media/screenshots2.jpeg">
 
-You'll be able to see how much you have left for the day, as well as how much you've saved so far. At the end of every day, the value in "Remaining Today" will be accumulated to the Total savings.
+### More Functionalities
 
-### Daily Spendings
+The app includes a Splashscreen as well as a one-time intro screen that gives you a brief explaination and also lets you set the daily limit before actually starting the app.
 
-This screen shows you all the spendings you've made today, and lets you edit/delete the entries. 
+The Setting Menu lets you change the daily limit, the system UI, and manage subscriptions as of ver 0.6.0. You can add a "Save" button along with the Spend button if you want to add money to your savings. This is disabled by default as my idea of this app was simply recording my spendings regardless of how much money I have, so that I don't go easy on myself when I earn money. Changing to show the entire history will show all spendings in a infinitely growing list instead of showing it day by day.
 
-### Settings
+The Subscription management lets you register subscription payments for monthly or yearly payments. On the day of payment, a spending entry will be automatically created.
 
-As of v0.5.0, the setting lets you change the daily limit and and allow you to change the System UI such as the adding or removing the save button next to the spend button, or change the way the history is displayed. A way to Clear out the Savings should be added some time.. but not important for now!
+### Open Source!
+
+This app, while it was built for my own use, I ended up learning alot on how to build apps using Flutter, or at least alot of the basic functionalities (no fancy libraries or APIs or network use). And I think this would give help on people learning Flutter. I use alot of the basic functionalities that are crucial in many apps including, but not limited to saving/loading data to shared preferences and database, using splashscreens, scroll view layout, non-scroll view navigation, etc. Hopefully this is useful for whoever ends up here!

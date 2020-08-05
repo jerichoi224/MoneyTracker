@@ -7,15 +7,17 @@ import 'package:money_tracker/database_helpers.dart';
 class DisplayWidget extends StatefulWidget {
   final Map<String, double> data;
   final List<SubscriptionEntry> subscriptions;
+  final Map<String, String> stringData;
 
-  DisplayWidget({Key key, this.data, this.subscriptions}) : super(key: key);
+  DisplayWidget({Key key, this.data, this.subscriptions, this.stringData}) : super(key: key);
 
   @override
   State createState() => _DisplayState();
 }
 
 class _DisplayState extends State<DisplayWidget>{
-  NumberFormat moneyNf = NumberFormat.simpleCurrency(decimalDigits: 2);
+  NumberFormat moneyUS = NumberFormat.simpleCurrency(decimalDigits: 2);
+  NumberFormat moneyKor = NumberFormat.currency(symbol: "₩", decimalDigits: 0);
 
   void initState() {
     SystemChannels.lifecycle.setMessageHandler((msg){
@@ -122,12 +124,17 @@ class _DisplayState extends State<DisplayWidget>{
     return widget.data["totalSaved"];
   }
 
-  // Currently works for Dollars
+  // Currently defaults is US Dollars
   Widget _moneyText(double a) {
+    if(widget.stringData["locale"] == "KOR"){
+      return Center(
+          child: Text(moneyKor.format(a.toInt()),
+              style: TextStyle(fontSize: 40.0, color: getColor(a))));
+    }
     // round value to two decimal
     int rounded = (a * 100).round().toInt();
     return Center(
-        child: Text(moneyNf.format(rounded/100.0),
+        child: Text(moneyUS.format(rounded/100.0),
             style: TextStyle(fontSize: 40.0, color: getColor(a))));
   }
 

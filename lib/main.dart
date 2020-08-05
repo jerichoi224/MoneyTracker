@@ -3,8 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:money_tracker/HomeWidget.dart';
 import 'package:money_tracker/SplashWidget.dart';
+import 'package:flutter_phoenix/flutter_phoenix.dart';
 
-void main() => runApp(MyApp());
+void main() => runApp(Phoenix(child: MyApp()));
 
 class MyApp extends StatelessWidget{
 
@@ -18,7 +19,7 @@ class MyApp extends StatelessWidget{
         ),
         home: MainApp(),
         routes: <String, WidgetBuilder>{
-          '/home': (BuildContext context) => new HomeWidget(),
+          '/home': (BuildContext context) => new HomeWidget(parentCtx: context),
           '/splash': (BuildContext context) => new SplashWidget(),
         }
       );

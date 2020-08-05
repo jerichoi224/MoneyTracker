@@ -9,12 +9,12 @@ class EditSubscriptionWidget extends StatefulWidget {
   final contentController = TextEditingController();
   final amountController = TextEditingController();
   final dateController = TextEditingController();
-
+  final String locale;
   final String mode;
   final SubscriptionEntry item;
   final BuildContext ctx;
 
-  EditSubscriptionWidget({Key key, this.mode, this.item, this.ctx}) : super(key: key);
+  EditSubscriptionWidget({Key key, this.mode, this.item, this.ctx, this.locale}) : super(key: key);
 
   @override
   State createState() => _EditSubscriptionState();
@@ -41,7 +41,7 @@ class _EditSubscriptionState extends State<EditSubscriptionWidget> {
 
       cycle = entry.cycle == 0 ? "monthly" : "yearly";
       widget.contentController.text = entry.content;
-      widget.amountController.text = entry.amount.toString();
+      widget.amountController.text = widget.locale == "KOR" ? entry.amount.toInt().toString() : entry.amount.toString();
       monthlyRenewDay = dt.day;
       yearlyRenewDate = DateTime(DateTime.now().toLocal().year, dt.month, dt.day);
 
@@ -54,7 +54,9 @@ class _EditSubscriptionState extends State<EditSubscriptionWidget> {
       if(msg==AppLifecycleState.resumed.toString()) {
         if(this.mounted){
         _readSP("SubscriptionContentText").then((val) {setState(() {widget.contentController.text = val;});});
-        _readSP("SubscriptionAmountText").then((val) {setState(() {widget.amountController.text = val;});});
+        _readSP("SubscriptionAmountText").then((val) {setState(() {
+          widget.amountController.text = widget.locale == "KOR" ? val.toInt().toString() : val.toString();
+        });});
         _readSP("SubscriptionYearlyRenewDate").then((val) {val != null ?? setState(() { yearlyRenewDate = DateTime.fromMillisecondsSinceEpoch(val);});});
         _readSP("SubscriptionMonthlyRenewDay").then((val) {setState(() {monthlyRenewDay = val;});});
         _readSP("cycle").then((val) {setState(() {cycle = val;});});
@@ -77,11 +79,19 @@ class _EditSubscriptionState extends State<EditSubscriptionWidget> {
     }
     return double.tryParse(s) != null;
   }
+
   bool isDate(String s) {
     if(s == null) {
       return false;
     }
     return int.tryParse(s) != null && int.parse(s) < 32 && int.parse(s) > 0;
+  }
+
+  bool isInt(String s) {
+    if (s == null) {
+      return false;
+    }
+    return int.tryParse(s) != null;
   }
 
   String getYearlyDate(){
@@ -298,7 +308,8 @@ class _EditSubscriptionState extends State<EditSubscriptionWidget> {
                                       ListTile(
                                           onTap:(){
                                             // Check Amount
-                                            if(!isNumeric(widget.amountController.text)) {
+                                            if(!isNumeric(widget.amountController.text)||
+                                                widget.locale == "KOR" && !isInt(widget.amountController.text)) {
                                               Scaffold.of(context).showSnackBar(SnackBar(
                                                 content: Text('Your Amount is invalid. Please Check again'),
                                                 duration: Duration(seconds: 3),

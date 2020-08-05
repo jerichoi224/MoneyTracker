@@ -7,15 +7,17 @@ import 'dart:math';
 class SubscriptionListWidget extends StatefulWidget {
   final Map<String, double> data;
   final List<SubscriptionEntry> subscriptions;
+  final String locale;
 
-  SubscriptionListWidget({Key key, this.data, this.subscriptions}) : super(key: key);
+  SubscriptionListWidget({Key key, this.data, this.subscriptions, this.locale}) : super(key: key);
 
   @override
   State createState() => _SubscriptionListState();
 }
 
 class _SubscriptionListState extends State<SubscriptionListWidget> {
-  NumberFormat moneyNf = NumberFormat.simpleCurrency(decimalDigits: 2);
+  NumberFormat moneyUS = NumberFormat.simpleCurrency(decimalDigits: 2);
+  NumberFormat moneyKor = NumberFormat.currency(symbol: "₩", decimalDigits: 0);
   List<SubscriptionEntry> subscriptionList;
 
   @override
@@ -49,7 +51,7 @@ class _SubscriptionListState extends State<SubscriptionListWidget> {
     final SubscriptionEntry result = await Navigator.push(
         context,
         MaterialPageRoute(
-          builder: (context) => EditSubscriptionWidget(mode: "EDIT", item: item, ctx: ctx,),
+          builder: (context) => EditSubscriptionWidget(mode: "EDIT", item: item, ctx: ctx, locale: widget.locale,),
         ));
 
     if(result != null){
@@ -113,7 +115,7 @@ class _SubscriptionListState extends State<SubscriptionListWidget> {
                 text: TextSpan(
                   children: <TextSpan>[
                     TextSpan(
-                        text:moneyNf.format(i.amount),
+                        text: widget.locale == "KOR" ? moneyKor.format(i.amount) : moneyUS.format(i.amount),
                       style: TextStyle(color: Colors.black)
                     ),
                     TextSpan(

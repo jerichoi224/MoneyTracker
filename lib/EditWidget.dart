@@ -6,15 +6,15 @@ class EditWidget extends StatefulWidget {
   final contentController = TextEditingController();
   final amountController = TextEditingController();
   final SingleEntry item;
+  final String locale;
 
-  EditWidget({Key key, this.item}) : super(key: key);
+  EditWidget({Key key, this.item, this.locale}) : super(key: key);
 
   @override
   State createState() => _EditState();
 }
 
 class _EditState extends State<EditWidget> {
-  NumberFormat moneyNf = NumberFormat.simpleCurrency(decimalDigits: 2);
 
   // Check if the value is numeric
   bool isNumeric(String s) {
@@ -24,9 +24,19 @@ class _EditState extends State<EditWidget> {
     return double.tryParse(s) != null;
   }
 
+  bool isInt(String s) {
+    if (s == null) {
+      return false;
+    }
+    return int.tryParse(s) != null;
+  }
+
   @override
   Widget build(BuildContext context) {
     widget.amountController.text = widget.item.amount.toString();
+  if(widget.locale == "KOR"){
+      widget.amountController.text = widget.item.amount.toInt().toString();
+    }
     widget.contentController.text = widget.item.content == "No Description" ? "" : widget.item.content.toString();
     return WillPopScope(
         onWillPop: () async{
@@ -115,7 +125,8 @@ class _EditState extends State<EditWidget> {
                                       ListTile(
                                           onTap:(){
                                             // Invalid input
-                                            if(!isNumeric(widget.amountController.text)) {
+                                            if(!isNumeric(widget.amountController.text) ||
+                                                widget.locale == "KOR" && !isInt(widget.amountController.text)) {
                                               Scaffold.of(context).showSnackBar(SnackBar(
                                                 content: Text('Your Amount is invalid. Please Check again'),
                                                 duration: Duration(seconds: 3),

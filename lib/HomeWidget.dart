@@ -9,16 +9,16 @@ import 'SettingsWidget.dart';
 import "package:intl/intl.dart";
 import 'dart:async';
 import 'package:flutter/services.dart';
+import 'package:flutter_phoenix/flutter_phoenix.dart';
 
 class HomeWidget extends StatefulWidget {
-  final _HomeState myHomeState = new _HomeState();
+  final BuildContext parentCtx;
+
+  HomeWidget({Key key, this.parentCtx});
 
   @override
-  State createState() => myHomeState;
+  State createState() => _HomeState();
 
-  void checkNewDay(){
-    myHomeState.checkNewDay();
-  }
 }
 
 class _HomeState extends State<HomeWidget>{
@@ -66,6 +66,7 @@ class _HomeState extends State<HomeWidget>{
 
   loadValues(){
     // System Values
+    _readSP("locale").then((val) {setState(() {stringData["locale"] = val == 0.0 ? "US" : val;});});
     _readSP("dailyLimit").then((val) {setState(() {data["dailyLimit"] = val;});});
     _readSP("totalSaved").then((val) {setState(() {data["totalSaved"] = val;});});
     _readSP("todayDate").then((todayDate) {setState(() {
@@ -169,11 +170,10 @@ class _HomeState extends State<HomeWidget>{
     setState(() {patched = true;});
   }
 
-  // Two Main Screens for the app
   List<Widget> _children() => [
     SpendMoneyWidget(data: data, stringData: stringData),
-    DisplayWidget(data: data, subscriptions: subscriptions),
-    SpendingHistoryWidget(data: data)
+    DisplayWidget(data: data, subscriptions: subscriptions, stringData: stringData),
+    SpendingHistoryWidget(data: data, stringData: stringData,)
   ];
 
   // Navigate to Settings screen
@@ -182,13 +182,17 @@ class _HomeState extends State<HomeWidget>{
     final result = await Navigator.push(
         context,
         MaterialPageRoute(
-          builder: (context) => SettingsWidget(data: data, subscriptions: subscriptions),
+          builder: (context) => SettingsWidget(data: data, subscriptions: subscriptions, stringData: stringData,),
         ));
 
-    // Update any values that have changed.
-    setState(() {
-      data = result;
-    });
+    if(result["reset"] == 1){
+      todaySpending.clear();
+      data["totalSaved"] = 0;
+      data["todaySpent"] = 0;
+      _saveSP("totalSaved", data["totalSaved"]);
+      result["reset"] = 0.0;
+      Phoenix.rebirth(widget.parentCtx);
+    }
   }
 
   changePage(int index){
@@ -286,9 +290,9 @@ class _HomeState extends State<HomeWidget>{
   }
 
   // Reading from Shared Preferences
-  Future<double> _readSP(String key) async {
+  Future<dynamic> _readSP(String key) async {
     final prefs = await SharedPreferences.getInstance();
-    double value = prefs.getDouble(key);
+    dynamic value = prefs.get(key);
     if(value == null){return 0.0;}
     return value;
   }

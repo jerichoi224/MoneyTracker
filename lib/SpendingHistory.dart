@@ -6,15 +6,18 @@ import 'package:flutter/services.dart';
 
 class SpendingHistoryWidget extends StatefulWidget {
   final Map<String, double> data;
+    final Map<String, String> stringData;
 
-  SpendingHistoryWidget({Key key, this.data}) : super(key: key);
+  SpendingHistoryWidget({Key key, this.data, this.stringData}) : super(key: key);
 
   @override
   State createState() => _SpendingHistoryState();
 }
 
 class _SpendingHistoryState extends State<SpendingHistoryWidget> with WidgetsBindingObserver{
-  NumberFormat moneyNf = NumberFormat.simpleCurrency(decimalDigits: 2);
+  NumberFormat moneyUS = NumberFormat.simpleCurrency(decimalDigits: 2);
+  NumberFormat moneyKor = NumberFormat.currency(symbol: "₩", decimalDigits: 0);
+
   int remaining, saved;
   String dayString;
   DateTime _day;
@@ -53,12 +56,14 @@ class _SpendingHistoryState extends State<SpendingHistoryWidget> with WidgetsBin
   }
 
   TextSpan _moneyText(double a) {
+    if(widget.stringData["locale"] == "KOR"){
+      return TextSpan(text: moneyKor.format(a.toInt()),
+          style: TextStyle(color: getColor(a)));
+    }
     // round value to two decimal
-    int rounded = (a * 100).toInt();
-    a = rounded/100;
-
-    return TextSpan(text: moneyNf.format(a),
-            style: TextStyle(color: getColor(a)));
+    int rounded = (a * 100).round().toInt();
+    return TextSpan(text: moneyUS.format(rounded/100.0),
+        style: TextStyle(color: getColor(a)));
   }
 
   Color getColor(i) {
@@ -76,7 +81,7 @@ class _SpendingHistoryState extends State<SpendingHistoryWidget> with WidgetsBin
     final SingleEntry result = await Navigator.push(
         context,
         MaterialPageRoute(
-          builder: (context) => EditWidget(item: item),
+          builder: (context) => EditWidget(item: item, locale: widget.stringData["locale"],),
         )
     );
 

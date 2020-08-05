@@ -14,7 +14,8 @@ class SpendMoneyWidget extends StatefulWidget {
 }
 
 class _SpendMoneyState extends State<SpendMoneyWidget> {
-  NumberFormat moneyNf = NumberFormat.simpleCurrency(decimalDigits: 2);
+  NumberFormat moneyUS = NumberFormat.simpleCurrency(decimalDigits: 2);
+  NumberFormat moneyKor = NumberFormat.currency(symbol: "₩", decimalDigits: 0);
 
   String amount;
 
@@ -37,6 +38,13 @@ class _SpendMoneyState extends State<SpendMoneyWidget> {
     });
   }
 
+  String getMoneyText(){
+    if(widget.stringData["locale"] == "KOR"){
+      return moneyKor.format(double.parse(amount));
+    }
+    return moneyUS.format(double.parse(amount)/100.0);
+  }
+
   Widget buildButton(String s, [Icon i, Color c, double fontSize]){
     return new Expanded(
         child: new MaterialButton(
@@ -57,7 +65,10 @@ class _SpendMoneyState extends State<SpendMoneyWidget> {
       }
     }else if(s == "Spend" || s == "Save"){
       FocusScope.of(context).unfocus();
-      double val = double.parse(amount)/100.0;
+      double val = double.parse(amount) / 100.0;
+      if(widget.stringData["locale"] == "KOR"){
+        val *= 100;
+      }
       if(val > 0) {
         String content = widget._myController.text.isEmpty
             ? ("")
@@ -117,7 +128,7 @@ class _SpendMoneyState extends State<SpendMoneyWidget> {
 
                       new Container(
                         padding: new EdgeInsets.fromLTRB(0, 55, 0, 30),
-                        child: new Text(moneyNf.format(double.parse(amount)/100.0),
+                        child: new Text(getMoneyText(),
                           textAlign: TextAlign.center,
                           style: new TextStyle(
                             fontSize: 50,

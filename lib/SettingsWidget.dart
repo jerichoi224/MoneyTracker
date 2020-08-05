@@ -9,23 +9,26 @@ class SettingsWidget extends StatefulWidget {
   final amountController = TextEditingController();
   final dateController = TextEditingController();
   final List<SubscriptionEntry> subscriptions;
+  final Map<String, String> stringData;
 
   final Map<String, double> data;
-  SettingsWidget({Key key, this.data, this.subscriptions}) : super(key: key);
+  SettingsWidget({Key key, this.data, this.subscriptions, this.stringData}) : super(key: key);
 
   @override
   State createState() => _SettingsState();
 }
 
 class _SettingsState extends State<SettingsWidget> {
-  String currentDaily, monthlyReset;
+  String currentDaily, monthlyReset, currency;
   bool showSaveButton, showEntireHistory, confirmed;
-  NumberFormat moneyNf = NumberFormat.simpleCurrency(decimalDigits: 2);
+  NumberFormat moneyUS = NumberFormat.simpleCurrency(decimalDigits: 2);
+  NumberFormat moneyKor = NumberFormat.currency(symbol: "₩", decimalDigits: 0);
 
   @override
   void initState() {
     super.initState();
     confirmed = false;
+    currency = widget.stringData["locale"] == "KOR" ? "Won (₩)" : "Dollars (\$)";
     showSaveButton = widget.data["showSave"] == 1.0;
     showEntireHistory = widget.data["historyMode"] == 1.0;
   }
@@ -57,7 +60,7 @@ class _SettingsState extends State<SettingsWidget> {
     final result = await Navigator.push(
         context,
         MaterialPageRoute(
-          builder: (context) => EditSubscriptionWidget(mode: "NEW", item: null, ctx: ctx),
+          builder: (context) => EditSubscriptionWidget(mode: "NEW", item: null, ctx: ctx, locale: widget.stringData["locale"],),
         ));
 
     // Save any new Subscriptions
@@ -70,17 +73,62 @@ class _SettingsState extends State<SettingsWidget> {
     }
   }
 
+  Future<void> _showMyDialog(String newValue, BuildContext ctx) async {
+    return showDialog<void>(
+      context: context,
+      barrierDismissible: false, // user must tap button!
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text('Warning!'),
+          content: SingleChildScrollView(
+            child: ListBody(
+              children: <Widget>[
+                Text('Changing the currency will clear all data and restart. Please back up your data if you need to.'),
+              ],
+            ),
+          ),
+          actions: <Widget>[
+            FlatButton(
+              child: Text('Cancel'),
+              onPressed: () {
+                FocusScope.of(context).unfocus();
+                Navigator.of(context).pop();
+              },
+            ),
+            FlatButton(
+              child: Text('Confirm'),
+              onPressed: () {
+                Scaffold.of(ctx).showSnackBar(SnackBar(
+                  content: Text('Data will be cleared on Save'),
+                  duration: Duration(seconds: 5),
+                ));
+                setState(() {
+                  currency = newValue;
+                });
+                FocusScope.of(context).unfocus();
+                Navigator.of(context).pop();
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   void _openSubscriptionList(){
     Navigator.push(context, MaterialPageRoute(
-          builder: (context) => SubscriptionListWidget(subscriptions: widget.subscriptions),
+          builder: (context) => SubscriptionListWidget(subscriptions: widget.subscriptions, locale: widget.stringData["locale"],),
         )
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    FocusScope.of(context).unfocus();
-    currentDaily = moneyNf.format(widget.data["dailyLimit"]);
+    if(widget.stringData["locale"] == "KOR"){
+      currentDaily = moneyKor.format(widget.data["dailyLimit"]);
+    }else {
+      currentDaily = moneyUS.format(widget.data["dailyLimit"]);
+    }
     return WillPopScope(
         onWillPop: () async{
           Navigator.pop(context, widget.data);
@@ -141,6 +189,34 @@ class _SettingsState extends State<SettingsWidget> {
                                   ],
                                 )
                             ),
+                            ListTile(
+                                title: new Row(
+                                  children: <Widget>[
+                                    Text("Currency"),
+                                    Spacer(),
+                                    DropdownButton<String>(
+                                      value: currency,
+                                      iconSize: 24,
+                                      elevation: 16,
+                                      underline: Container(
+                                        height: 2,
+                                      ),
+                                      onChanged: (String newValue) {
+                                        if(newValue != currency){
+                                          _showMyDialog(newValue, context);
+                                        }
+                                      },
+                                      items: <String>['Dollars (\$)', 'Won (₩)']
+                                          .map<DropdownMenuItem<String>>((String value) {
+                                        return DropdownMenuItem<String>(
+                                          value: value,
+                                          child: Text(value),
+                                        );
+                                      }).toList(),
+                                    )
+                                  ],
+                                )
+                            )
                           ],
                         )
                       ),
@@ -249,7 +325,7 @@ class _SettingsState extends State<SettingsWidget> {
                                     if(isNumeric(widget.amountController.text)) {
                                       widget.data["dailyLimit"] =
                                           double.parse(widget.amountController.text);
-                                      _save("dailyLimit", widget.data);
+                                      _save("dailyLimit", widget.data["dailyLimit"]);
                                     }else{
                                       Scaffold.of(context).showSnackBar(SnackBar(
                                         content: Text('Your input is invalid. Please Check again'),
@@ -264,15 +340,23 @@ class _SettingsState extends State<SettingsWidget> {
                                   if(showSaveButton){
                                     widget.data["showSave"] = 1.0;
                                   }
-                                  _save("showSave", widget.data);
+                                  _save("showSave", widget.data["showSave"]);
 
                                   // Checkbox for Disabling Save Button
                                   widget.data["historyMode"] = 0.0;
                                   if(showEntireHistory){
                                     widget.data["historyMode"] = 1.0;
                                   }
-                                  _save("historyMode", widget.data);
+                                  _save("historyMode", widget.data["historyMode"]);
 
+                                  String tmp = currency == "Won (₩)" ? "KOR" : "US";
+                                  if(tmp != widget.stringData["locale"]){
+                                    widget.stringData["locale"] = tmp;
+                                    _save("locale", tmp);
+
+                                    _clearDB();
+                                    widget.data["reset"] = 1;
+                                  }
 
                                   Navigator.pop(context, widget.data);
                                 },
@@ -300,8 +384,17 @@ class _SettingsState extends State<SettingsWidget> {
     await helper.insertSubscription(entry);
 }
 
-  _save(String key, Map<String, double> data) async {
+  _save(String key, dynamic data) async {
     final prefs = await SharedPreferences.getInstance();
-    prefs.setDouble(key, data[key]);
+    if(data is String) {prefs.setString(key, data);}
+    else if(data is bool) {prefs.setBool(key, data);}
+    else if(data is int) {prefs.setInt(key, data);}
+    else if(data is double) {prefs.setDouble(key, data);}
+    else {prefs.setStringList(key, data);}  }
+
+  _clearDB() async {
+    DatabaseHelper helper = DatabaseHelper.instance;
+    helper.clearSpendingTable();
+    helper.clearSubscriptionTable();
   }
 }

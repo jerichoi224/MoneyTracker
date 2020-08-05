@@ -235,4 +235,14 @@ class DatabaseHelper {
     }
     return new List<SingleEntry>();
   }
+
+  Future<int> clearSpendingTable() async{
+    Database db = await database;
+    return await db.delete(tableSpending);
+  }
+
+  Future<int> clearSubscriptionTable() async{
+    Database db = await database;
+    return await db.delete(tableSubscriptions);
+  }
 }

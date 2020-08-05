@@ -5,18 +5,21 @@
 
 Application for Tracking Daily Money Usage in hope of helping me save money, made with Flutter.
 [Available in Google Play Store](https://play.google.com/store/apps/details?id=com.kahluabear.money_tracker&ah=Q-xAfI_2q4fv8B5SXuzCaEp0gTk)
+
+### Devleopment Status
+I've added everything I wanted to add for my personal need which includes the functions and support for Dollars and Korean Won. If requested, I can add more currency, but unless I come up with more ideas on functionalities or find bugs while using it, the development will be on pause for now. 
+
 ## Basic Overview
 The Basic Idea is that you are able to decide how much you want to be using everyday on average, and the app will let you keep track of how much you've spent/saved daily and overall.
 
-<img src="https://github.com/jerichoi224/MoneyTracker/blob/master/media/screenshots1.jpeg">
-
 ### Basic Functionality
+<img src="https://github.com/jerichoi224/MoneyTracker/blob/master/media/screenshots1.jpeg">
 
 The three screenshots above show the basic functionality of the app. You Record your spendings, on the left. You can see how much you have left today and how much you've saved so far in the middle, and see all your previous spendings on the right. For hte Display portion, "Remaining Today" will show the value of the daily limit subtracted by the amount you've spent today. At midnight, whatever is remaining from the day will get added to the "Total Savings."
 
-<img src="https://github.com/jerichoi224/MoneyTracker/blob/master/media/screenshots2.jpeg">
 
 ### More Functionalities
+<img src="https://github.com/jerichoi224/MoneyTracker/blob/master/media/screenshots2.jpeg">
 
 The app includes a Splashscreen as well as a one-time intro screen that gives you a brief explaination and also lets you set the daily limit before actually starting the app.
 

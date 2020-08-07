@@ -199,7 +199,7 @@ class _SettingsState extends State<SettingsWidget> {
                                           _showMyDialog(newValue, context);
                                         }
                                       },
-                                      items: <String>['USD', 'KRW']
+                                      items: CurrencyInfo().currencyList()
                                           .map<DropdownMenuItem<String>>((String value) {
                                         return DropdownMenuItem<String>(
                                           value: value,

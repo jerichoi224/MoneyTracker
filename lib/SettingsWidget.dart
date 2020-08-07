@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import "package:intl/intl.dart";
+
+import 'package:money_tracker/CurrencyInfo.dart';
 import 'package:money_tracker/EditSubscriptionWidget.dart';
 import 'package:money_tracker/SubscriptionListWidget.dart';
 import 'package:money_tracker/database_helpers.dart';
@@ -11,8 +12,8 @@ class SettingsWidget extends StatefulWidget {
   final List<SubscriptionEntry> subscriptions;
   final Map<String, String> stringData;
 
-  final Map<String, double> data;
-  SettingsWidget({Key key, this.data, this.subscriptions, this.stringData}) : super(key: key);
+  final Map<String, num> numData;
+  SettingsWidget({Key key, this.numData, this.subscriptions, this.stringData}) : super(key: key);
 
   @override
   State createState() => _SettingsState();
@@ -20,25 +21,15 @@ class SettingsWidget extends StatefulWidget {
 
 class _SettingsState extends State<SettingsWidget> {
   String currentDaily, monthlyReset, currency;
-  bool showSaveButton, showEntireHistory, confirmed;
-  NumberFormat moneyUS = NumberFormat.simpleCurrency(decimalDigits: 2);
-  NumberFormat moneyKor = NumberFormat.currency(symbol: "₩", decimalDigits: 0);
+  bool showSaveButton, showEntireHistory;
 
   @override
   void initState() {
     super.initState();
-    confirmed = false;
-    currency = widget.stringData["locale"] == "KOR" ? "Won (₩)" : "Dollars (\$)";
-    showSaveButton = widget.data["showSave"] == 1.0;
-    showEntireHistory = widget.data["historyMode"] == 1.0;
-  }
-
-  String getMonthlyResetString(){
-    String num = widget.data["monthlyResetDate"].toInt().toString();
-    if(num == "1") return "1st";
-    if(num == "2") return "2nd";
-    if(num == "3") return "3rd";
-    return num + "th";
+    currency = widget.stringData["currency"];
+    currentDaily = widget.numData["dailyLimit"].toString();
+    showSaveButton = widget.numData["showSave"] == 1;
+    showEntireHistory = widget.numData["historyMode"] == 1;
   }
 
   bool isDate(String s) {
@@ -48,11 +39,18 @@ class _SettingsState extends State<SettingsWidget> {
     return int.tryParse(s) != null && int.parse(s) < 32 && int.parse(s) > 0;
   }
 
+  bool isInt(String s) {
+    if (s == null) {
+      return false;
+    }
+    return int.tryParse(s) != null;
+  }
+
   bool isNumeric(String s) {
     if (s == null) {
       return false;
     }
-    return double.tryParse(s) != null;
+    return num.tryParse(s) != null;
   }
 
   void _openEditSubscription(BuildContext ctx) async{
@@ -60,7 +58,7 @@ class _SettingsState extends State<SettingsWidget> {
     final result = await Navigator.push(
         context,
         MaterialPageRoute(
-          builder: (context) => EditSubscriptionWidget(mode: "NEW", item: null, ctx: ctx, locale: widget.stringData["locale"],),
+          builder: (context) => EditSubscriptionWidget(mode: "NEW", item: null, ctx: ctx, currency: widget.stringData["currency"],),
         ));
 
     // Save any new Subscriptions
@@ -117,21 +115,16 @@ class _SettingsState extends State<SettingsWidget> {
 
   void _openSubscriptionList(){
     Navigator.push(context, MaterialPageRoute(
-          builder: (context) => SubscriptionListWidget(subscriptions: widget.subscriptions, locale: widget.stringData["locale"],),
-        )
+      builder: (context) => SubscriptionListWidget(subscriptions: widget.subscriptions, currency: widget.stringData["currency"],),
+    )
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    if(widget.stringData["locale"] == "KOR"){
-      currentDaily = moneyKor.format(widget.data["dailyLimit"]);
-    }else {
-      currentDaily = moneyUS.format(widget.data["dailyLimit"]);
-    }
     return WillPopScope(
         onWillPop: () async{
-          Navigator.pop(context, widget.data);
+          Navigator.pop(context, false);
           return true;
         },
         child: new GestureDetector(
@@ -206,7 +199,7 @@ class _SettingsState extends State<SettingsWidget> {
                                           _showMyDialog(newValue, context);
                                         }
                                       },
-                                      items: <String>['Dollars (\$)', 'Won (₩)']
+                                      items: <String>['USD', 'KRW']
                                           .map<DropdownMenuItem<String>>((String value) {
                                         return DropdownMenuItem<String>(
                                           value: value,
@@ -322,43 +315,50 @@ class _SettingsState extends State<SettingsWidget> {
                               ListTile(
                                 onTap:(){
                                   if(widget.amountController.text.isNotEmpty) {
-                                    if(isNumeric(widget.amountController.text)) {
-                                      widget.data["dailyLimit"] =
-                                          double.parse(widget.amountController.text);
-                                      _save("dailyLimit", widget.data["dailyLimit"]);
-                                    }else{
-                                      Scaffold.of(context).showSnackBar(SnackBar(
-                                        content: Text('Your input is invalid. Please Check again'),
-                                        duration: Duration(seconds: 3),
-                                      ));
+                                    if (!isNumeric(
+                                        widget.amountController.text) ||
+                                        (CurrencyInfo()
+                                            .getCurrencyDecimalPlaces(
+                                            widget.stringData["currency"]) ==
+                                            0 &&
+                                            !isInt(widget.amountController
+                                                .text))) {
+                                      Scaffold.of(context).showSnackBar(
+                                          SnackBar(
+                                            content: Text(
+                                                'Your Amount is invalid. Please Check again'),
+                                            duration: Duration(seconds: 3),
+                                          ));
                                       return;
+                                    } else {
+                                      widget.numData["dailyLimit"] = num.parse(widget.amountController.text);
+                                      _save("dailyLimit", widget.numData["dailyLimit"]);
                                     }
                                   }
 
                                   // Checkbox for Disabling Save Button
-                                  widget.data["showSave"] = 0.0;
+                                  widget.numData["showSave"] = 0;
                                   if(showSaveButton){
-                                    widget.data["showSave"] = 1.0;
+                                    widget.numData["showSave"] = 1;
                                   }
-                                  _save("showSave", widget.data["showSave"]);
+                                  _save("showSave", widget.numData["showSave"]);
 
                                   // Checkbox for Disabling Save Button
-                                  widget.data["historyMode"] = 0.0;
+                                  widget.numData["historyMode"] = 0;
                                   if(showEntireHistory){
-                                    widget.data["historyMode"] = 1.0;
+                                    widget.numData["historyMode"] = 1;
                                   }
-                                  _save("historyMode", widget.data["historyMode"]);
+                                  _save("historyMode", widget.numData["historyMode"]);
 
-                                  String tmp = currency == "Won (₩)" ? "KOR" : "US";
-                                  if(tmp != widget.stringData["locale"]){
-                                    widget.stringData["locale"] = tmp;
-                                    _save("locale", tmp);
+                                  if(currency != widget.stringData["currency"]){
+                                    widget.stringData["currency"] = currency;
+                                    _save("currency", currency);
 
                                     _clearDB();
-                                    widget.data["reset"] = 1;
+                                    Navigator.pop(context, true);
                                   }
-
-                                  Navigator.pop(context, widget.data);
+                                  Navigator.pop(context, false);
+                                  setState(() {});
                                 },
                                 title: Text("Save Setting",
                                   style: TextStyle(

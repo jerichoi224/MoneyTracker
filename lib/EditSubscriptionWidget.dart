@@ -1,20 +1,22 @@
 import 'package:flutter/material.dart';
 import "package:intl/intl.dart";
-import 'database_helpers.dart';
 import 'package:flutter/services.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:math';
+
+import 'package:money_tracker/database_helpers.dart';
+import 'package:money_tracker/CurrencyInfo.dart';
 
 class EditSubscriptionWidget extends StatefulWidget {
   final contentController = TextEditingController();
   final amountController = TextEditingController();
   final dateController = TextEditingController();
-  final String locale;
+
+  final String currency;
   final String mode;
   final SubscriptionEntry item;
   final BuildContext ctx;
 
-  EditSubscriptionWidget({Key key, this.mode, this.item, this.ctx, this.locale}) : super(key: key);
+  EditSubscriptionWidget({Key key, this.mode, this.item, this.ctx, this.currency}) : super(key: key);
 
   @override
   State createState() => _EditSubscriptionState();
@@ -30,18 +32,20 @@ class _EditSubscriptionState extends State<EditSubscriptionWidget> {
   @override
   void initState() {
     super.initState();
+
     if(widget.mode == "NEW") {
       entry = new SubscriptionEntry();
       cycle = "monthly";
       monthlyRenewDay = 0;
     }
+
     if(widget.mode == "EDIT"){
       entry = widget.item;
       DateTime dt = DateTime.fromMillisecondsSinceEpoch(entry.day);
 
       cycle = entry.cycle == 0 ? "monthly" : "yearly";
       widget.contentController.text = entry.content;
-      widget.amountController.text = widget.locale == "KOR" ? entry.amount.toInt().toString() : entry.amount.toString();
+      widget.amountController.text = entry.amount.toString();
       monthlyRenewDay = dt.day;
       yearlyRenewDate = DateTime(DateTime.now().toLocal().year, dt.month, dt.day);
 
@@ -50,26 +54,6 @@ class _EditSubscriptionState extends State<EditSubscriptionWidget> {
       }
     }
 
-    SystemChannels.lifecycle.setMessageHandler((msg){
-      if(msg==AppLifecycleState.resumed.toString()) {
-        if(this.mounted){
-        _readSP("SubscriptionContentText").then((val) {setState(() {widget.contentController.text = val;});});
-        _readSP("SubscriptionAmountText").then((val) {setState(() {
-          widget.amountController.text = widget.locale == "KOR" ? val.toInt().toString() : val.toString();
-        });});
-        _readSP("SubscriptionYearlyRenewDate").then((val) {val != null ?? setState(() { yearlyRenewDate = DateTime.fromMillisecondsSinceEpoch(val);});});
-        _readSP("SubscriptionMonthlyRenewDay").then((val) {setState(() {monthlyRenewDay = val;});});
-        _readSP("cycle").then((val) {setState(() {cycle = val;});});
-        }
-      } else if(msg==AppLifecycleState.paused.toString() || msg==AppLifecycleState.inactive.toString()) {
-        _saveSP("cycle", cycle);
-        widget.contentController.text.isNotEmpty ?? _saveSP("SubscriptionContentText", widget.contentController.text);
-        widget.amountController.text.isNotEmpty ?? _saveSP("SubscriptionAmountText", widget.amountController.text);
-        yearlyRenewDate != null ?? _saveSP("SubscriptionYearlyRenewDate", yearlyRenewDate.millisecondsSinceEpoch);
-        monthlyRenewDay != 0 ?? _saveSP("SubscriptionMonthlyRenewDay", monthlyRenewDay);
-      }
-      return null;
-    });
   }
 
   // Check if the value is numeric
@@ -98,9 +82,9 @@ class _EditSubscriptionState extends State<EditSubscriptionWidget> {
     return yearlyRenewDate == null ? "" :DateFormat('MM/dd').format(yearlyRenewDate);
   }
 
-  double roundDouble(double value, int places){
-    double mod = pow(10.0, places);
-    return ((value * mod).round().toDouble() / mod);
+  num roundDouble(num value, int places){
+    num mod = pow(10.0, places);
+    return ((value * mod).round()/ mod);
   }
 
   @override
@@ -110,14 +94,14 @@ class _EditSubscriptionState extends State<EditSubscriptionWidget> {
           Navigator.pop(context, null);
           return true;
         },
-          child: new GestureDetector(
-              onTap: () {
-                FocusScope.of(context).unfocus();
-              },
-              child: Scaffold(
+        child: new GestureDetector(
+            onTap: () {
+              FocusScope.of(context).unfocus();
+            },
+            child: Scaffold(
                 appBar: AppBar(
                   title: Text(
-                    widget.mode == "NEW" ? "Add Subscription" : "Edit Subscription"
+                      widget.mode == "NEW" ? "Add Subscription" : "Edit Subscription"
                   ),
                 ),
                 body: Builder(
@@ -197,105 +181,105 @@ class _EditSubscriptionState extends State<EditSubscriptionWidget> {
                                 )
                             ),
                             Card(
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8.0)),
-                              margin: EdgeInsets.all(8.0),
-                              child: Column(
-                                children: <Widget>[
-                                  ListTile(
-                                      title: new Row(
-                                        children: <Widget>[
-                                          Text("Payment Cycle"),
-                                          Spacer(),
-                                          DropdownButton<String>(
-                                            value: cycle,
-                                            iconSize: 24,
-                                            elevation: 16,
-                                            underline: Container(
-                                              height: 2,
-                                            ),
-                                            onChanged: (String newValue) {
-                                              setState(() {
-                                                FocusScope.of(context).unfocus();
-                                                cycle = newValue;
-                                              });
-                                            },
-                                            items: <String>['monthly', 'yearly']
-                                                .map<DropdownMenuItem<String>>((String value) {
-                                              return DropdownMenuItem<String>(
-                                                value: value,
-                                                child: Text(value),
-                                              );
-                                            }).toList(),
-                                          )
-                                        ],
-                                      )
-                                  ),
-                                  Visibility(
-                                    visible: cycle == "monthly",
-                                    child: ListTile(
-                                        title: new Row(
-                                          children: <Widget>[
-                                            Text(
-                                                'Subscription Renews on:'
-                                            ),
-                                            Spacer(),
-                                            Flexible(
-                                                child: TextField(
-                                                  controller: widget.dateController,
-                                                  decoration: InputDecoration(
-                                                    border: InputBorder.none,
-                                                    hintText: "Enter Day",
-                                                  ),
-                                                  textAlign: TextAlign.start,
-                                                  keyboardType: TextInputType.numberWithOptions(),
-                                                )
-                                            )
-                                          ],
-                                        )
-                                    ),
-                                  ),
-                                  Visibility(
-                                    visible: cycle == "yearly",
-                                    child: ListTile(
-                                        title: new Row(
-                                          children: <Widget>[
-                                            Text("Renew Date: " + getYearlyDate())
-                                          ],
-                                        ),
-                                      trailing: IconButton(
-                                        icon: Icon(Icons.calendar_today),
-                                        onPressed: (){
-                                          showDatePicker(
-                                            context: context,
-                                            initialDate: yearlyRenewDate == null ? new DateTime.now().toLocal() : yearlyRenewDate,
-                                            firstDate: new DateTime(DateTime.now().toLocal().year, 1, 1),
-                                            lastDate: new DateTime(DateTime.now().toLocal().year, 12, 31),
-                                            builder: (BuildContext context, Widget child) {
-                                              return Theme(
-                                                data: ThemeData.light().copyWith(
-                                                  colorScheme: ColorScheme.light(
-                                                    primary: Color.fromRGBO(149, 213, 178, 1),
-                                                    onPrimary: Colors.white,
-                                                  ),
-                                                  buttonTheme: ButtonThemeData(
-                                                    buttonColor: Color.fromRGBO(149, 213, 178, 1),
-                                                  ),
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8.0)),
+                                margin: EdgeInsets.all(8.0),
+                                child: Column(
+                                    children: <Widget>[
+                                      ListTile(
+                                          title: new Row(
+                                            children: <Widget>[
+                                              Text("Payment Cycle"),
+                                              Spacer(),
+                                              DropdownButton<String>(
+                                                value: cycle,
+                                                iconSize: 24,
+                                                elevation: 16,
+                                                underline: Container(
+                                                  height: 2,
                                                 ),
-                                                child: child,
-                                              );
-                                            },
-                                          ).then((value) {
-                                            setState(() {
-                                              FocusScope.of(context).unfocus();
-                                              yearlyRenewDate = value;
-                                            });
-                                          });
-                                        },
+                                                onChanged: (String newValue) {
+                                                  setState(() {
+                                                    FocusScope.of(context).unfocus();
+                                                    cycle = newValue;
+                                                  });
+                                                },
+                                                items: <String>['monthly', 'yearly']
+                                                    .map<DropdownMenuItem<String>>((String value) {
+                                                  return DropdownMenuItem<String>(
+                                                    value: value,
+                                                    child: Text(value),
+                                                  );
+                                                }).toList(),
+                                              )
+                                            ],
+                                          )
+                                      ),
+                                      Visibility(
+                                        visible: cycle == "monthly",
+                                        child: ListTile(
+                                            title: new Row(
+                                              children: <Widget>[
+                                                Text(
+                                                    'Subscription Renews on:'
+                                                ),
+                                                Spacer(),
+                                                Flexible(
+                                                    child: TextField(
+                                                      controller: widget.dateController,
+                                                      decoration: InputDecoration(
+                                                        border: InputBorder.none,
+                                                        hintText: "Enter Day",
+                                                      ),
+                                                      textAlign: TextAlign.start,
+                                                      keyboardType: TextInputType.numberWithOptions(),
+                                                    )
+                                                )
+                                              ],
+                                            )
+                                        ),
+                                      ),
+                                      Visibility(
+                                        visible: cycle == "yearly",
+                                        child: ListTile(
+                                            title: new Row(
+                                              children: <Widget>[
+                                                Text("Renew Date: " + getYearlyDate())
+                                              ],
+                                            ),
+                                            trailing: IconButton(
+                                              icon: Icon(Icons.calendar_today),
+                                              onPressed: (){
+                                                showDatePicker(
+                                                  context: context,
+                                                  initialDate: yearlyRenewDate == null ? new DateTime.now().toLocal() : yearlyRenewDate,
+                                                  firstDate: new DateTime(DateTime.now().toLocal().year, 1, 1),
+                                                  lastDate: new DateTime(DateTime.now().toLocal().year, 12, 31),
+                                                  builder: (BuildContext context, Widget child) {
+                                                    return Theme(
+                                                      data: ThemeData.light().copyWith(
+                                                        colorScheme: ColorScheme.light(
+                                                          primary: Color.fromRGBO(149, 213, 178, 1),
+                                                          onPrimary: Colors.white,
+                                                        ),
+                                                        buttonTheme: ButtonThemeData(
+                                                          buttonColor: Color.fromRGBO(149, 213, 178, 1),
+                                                        ),
+                                                      ),
+                                                      child: child,
+                                                    );
+                                                  },
+                                                ).then((value) {
+                                                  setState(() {
+                                                    yearlyRenewDate = value;
+                                                  });
+                                                  FocusScope.of(context).unfocus();
+                                                });
+                                              },
+                                            )
+                                        ),
                                       )
-                                    ),
-                                  )
-                                ]
-                              )
+                                    ]
+                                )
                             ),
                             // Save Button
                             Card(
@@ -308,8 +292,9 @@ class _EditSubscriptionState extends State<EditSubscriptionWidget> {
                                       ListTile(
                                           onTap:(){
                                             // Check Amount
-                                            if(!isNumeric(widget.amountController.text)||
-                                                widget.locale == "KOR" && !isInt(widget.amountController.text)) {
+                                            if(!isNumeric(widget.amountController.text) ||
+                                                (CurrencyInfo().getCurrencyDecimalPlaces(widget.currency) == 0 &&
+                                                    !isInt(widget.amountController.text))) {
                                               Scaffold.of(context).showSnackBar(SnackBar(
                                                 content: Text('Your Amount is invalid. Please Check again'),
                                                 duration: Duration(seconds: 3),
@@ -331,7 +316,7 @@ class _EditSubscriptionState extends State<EditSubscriptionWidget> {
                                               ));
                                               return;
                                             }
-                                            entry.amount = roundDouble(double.parse(widget.amountController.text), 2);
+                                            entry.amount = roundDouble(num.parse(widget.amountController.text), 2);
                                             entry.content = widget.contentController.text;
                                             Map cycleMap = {"monthly": 0, "yearly": 1};
                                             entry.cycle = cycleMap[cycle];
@@ -345,14 +330,20 @@ class _EditSubscriptionState extends State<EditSubscriptionWidget> {
                                                   content: Text('Day will be set to 28 instead for purpose of monthly recording.'),
                                                   duration: Duration(seconds: 3),
                                                 ));
+                                              }else{
+                                                Scaffold.of(widget.ctx).showSnackBar(SnackBar(
+                                                  content: Text(widget.mode == "NEW" ? 'Subscription has been added!' : 'Subscription has been edited!'),
+                                                  duration: Duration(seconds: 3),
+                                                ));
                                               }
-                                              entry.day = DateTime(DateTime.now().toLocal().year, 1, day).millisecondsSinceEpoch;
+                                              DateTime now = DateTime.now().toLocal();
+                                              entry.day = DateTime(now.year, now.month, day).millisecondsSinceEpoch;
                                             }
                                             Navigator.pop(context, entry);
                                           },
                                           title: Text(
-                                          widget.mode == "NEW" ? "Add Subscription" : "Save Changes"
-                                          ,
+                                            widget.mode == "NEW" ? "Add Subscription" : "Save Changes"
+                                            ,
                                             style: TextStyle(
                                               fontSize: 18,
                                             ),
@@ -366,24 +357,8 @@ class _EditSubscriptionState extends State<EditSubscriptionWidget> {
                         )
                     )
                 )
-          )
+            )
         )
     );
-  }
-
-  _saveSP(String key, dynamic value) async {
-    final prefs = await SharedPreferences.getInstance();
-
-    if(value is String) {prefs.setString(key, value);}
-    else if(value is bool) {prefs.setBool(key, value);}
-    else if(value is int) {prefs.setInt(key, value);}
-    else if(value is double) {prefs.setDouble(key, value);}
-    else {prefs.setStringList(key, value);}
-  }
-
-  Future<dynamic> _readSP(String key) async {
-    final prefs = await SharedPreferences.getInstance();
-    dynamic val = prefs.get(key);
-    return val;
   }
 }

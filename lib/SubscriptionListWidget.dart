@@ -1,23 +1,22 @@
 import 'package:flutter/material.dart';
 import "package:intl/intl.dart";
+
 import 'package:money_tracker/EditSubscriptionWidget.dart';
-import 'database_helpers.dart';
-import 'dart:math';
+import 'package:money_tracker/database_helpers.dart';
+import 'package:money_tracker/CurrencyInfo.dart';
+
 
 class SubscriptionListWidget extends StatefulWidget {
-  final Map<String, double> data;
   final List<SubscriptionEntry> subscriptions;
-  final String locale;
+  final String currency;
 
-  SubscriptionListWidget({Key key, this.data, this.subscriptions, this.locale}) : super(key: key);
+  SubscriptionListWidget({Key key, this.subscriptions, this.currency}) : super(key: key);
 
   @override
   State createState() => _SubscriptionListState();
 }
 
 class _SubscriptionListState extends State<SubscriptionListWidget> {
-  NumberFormat moneyUS = NumberFormat.simpleCurrency(decimalDigits: 2);
-  NumberFormat moneyKor = NumberFormat.currency(symbol: "₩", decimalDigits: 0);
   List<SubscriptionEntry> subscriptionList;
 
   @override
@@ -25,7 +24,7 @@ class _SubscriptionListState extends State<SubscriptionListWidget> {
     super.initState();
     subscriptionList = new List<SubscriptionEntry>();
 
-    _queryAllDB().then((entries) {
+    _queryDBAllSubscription().then((entries) {
       setState(() {
         subscriptionList = entries;
         widget.subscriptions.clear();
@@ -42,16 +41,11 @@ class _SubscriptionListState extends State<SubscriptionListWidget> {
     return day.toString() + "th";
   }
 
-  double roundDouble(double value, int places){
-    double mod = pow(10.0, places);
-    return ((value * mod).round().toDouble() / mod);
-  }
-
   void _openEditWidget(SubscriptionEntry item, BuildContext ctx) async {
     final SubscriptionEntry result = await Navigator.push(
         context,
         MaterialPageRoute(
-          builder: (context) => EditSubscriptionWidget(mode: "EDIT", item: item, ctx: ctx, locale: widget.locale,),
+          builder: (context) => EditSubscriptionWidget(mode: "EDIT", item: item, ctx: ctx, currency: widget.currency,),
         ));
 
     if(result != null){
@@ -63,7 +57,7 @@ class _SubscriptionListState extends State<SubscriptionListWidget> {
           i.amount = result.amount;
         }
       }
-      _updateDB(result);
+      _updateDBSubscription(result);
       setState(() {});
     }
     // Update any values that have changed.
@@ -75,7 +69,7 @@ class _SubscriptionListState extends State<SubscriptionListWidget> {
       onSelected: (selectedIndex) {
         // add this property
         if (selectedIndex == 1) {
-          _deleteDB(i.id);
+          _deleteDBSubscription(i.id);
           subscriptionList.remove(i);
           widget.subscriptions.remove(i);
           setState(() {});
@@ -102,11 +96,11 @@ class _SubscriptionListState extends State<SubscriptionListWidget> {
   }
 
   List<Widget> getSubscriptions(BuildContext ctx) {
-    List<Widget> history = new List<Widget>();
+    List<Widget> subscriptions = new List<Widget>();
     for (SubscriptionEntry i in subscriptionList) {
-      history.add(new Card(
+      subscriptions.add(new Card(
           shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(10.0)),
+          RoundedRectangleBorder(borderRadius: BorderRadius.circular(10.0)),
           margin: EdgeInsets.all(5.0),
           color: Colors.white,
           child: ListTile(
@@ -115,8 +109,8 @@ class _SubscriptionListState extends State<SubscriptionListWidget> {
                 text: TextSpan(
                   children: <TextSpan>[
                     TextSpan(
-                        text: widget.locale == "KOR" ? moneyKor.format(i.amount) : moneyUS.format(i.amount),
-                      style: TextStyle(color: Colors.black)
+                        text: CurrencyInfo().getCurrencyText(widget.currency, i.amount),
+                        style: TextStyle(color: Colors.black)
                     ),
                     TextSpan(
                         text: " (Renews on: " + getRenewDate(i) + ")",
@@ -127,10 +121,10 @@ class _SubscriptionListState extends State<SubscriptionListWidget> {
               subtitle: Text(i.content == "" ? "No Description" : i.content),
               trailing: _popUpMenuButton(i, ctx))));
     }
-    return history.length > 0 ? history : List.from([
+    return subscriptions.length > 0 ? subscriptions : List.from([
       Padding(
-        padding: EdgeInsets.fromLTRB(0, 30, 0, 0),
-        child: Center(child: Text("Nothing Found!"))
+          padding: EdgeInsets.fromLTRB(0, 30, 0, 0),
+          child: Center(child: Text("Nothing Found!"))
       )
     ]);
   }
@@ -142,31 +136,31 @@ class _SubscriptionListState extends State<SubscriptionListWidget> {
           title: Text("Subscription List"),
         ),
         body: Builder(
-          builder: (context) =>
-            SingleChildScrollView(
-                  child: Column(
-                      children: <Widget>[
-                        Column(
-                            mainAxisAlignment: MainAxisAlignment.start,
-                            children: getSubscriptions(context))
-                      ]
-                  )
-            )
+            builder: (context) =>
+                SingleChildScrollView(
+                    child: Column(
+                        children: <Widget>[
+                          Column(
+                              mainAxisAlignment: MainAxisAlignment.start,
+                              children: getSubscriptions(context))
+                        ]
+                    )
+                )
         )
     );
   }
 
-  _deleteDB(int id) async {
+  _deleteDBSubscription(int id) async {
     DatabaseHelper helper = DatabaseHelper.instance;
     await helper.deleteSubscription(id);
   }
 
-  _updateDB(SubscriptionEntry entry) async {
+  _updateDBSubscription(SubscriptionEntry entry) async {
     DatabaseHelper helper = DatabaseHelper.instance;
     await helper.updateSubscription(entry);
   }
 
-  Future<List<SubscriptionEntry>> _queryAllDB() async {
+  Future<List<SubscriptionEntry>> _queryDBAllSubscription() async {
     DatabaseHelper helper = DatabaseHelper.instance;
     return await helper.queryAllSubscriptions();
   }

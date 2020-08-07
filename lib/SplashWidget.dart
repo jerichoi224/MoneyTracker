@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import "package:intl/intl.dart";
 
 class SplashWidget extends StatefulWidget {
   final Map<String, double> data;
@@ -20,9 +19,9 @@ class _SplashState extends State<SplashWidget>{
   void initState(){
     super.initState();
 
-    var now = DateTime.now().toLocal();
-//    _saveSP("monthlyResetDate", now.day.toDouble());
-    _saveSP("todayDate", double.parse(DateFormat('yyyyMMdd').format(now)));
+    DateTime now = DateTime.now().toLocal();
+
+    _saveSP("todayDate", DateTime(now.year, now.month, now.day).millisecondsSinceEpoch);
   }
 
   bool isNumeric(String s) {
@@ -124,103 +123,6 @@ class _SplashState extends State<SplashWidget>{
     );
   }
 
-  Widget monthlyResetDate(BuildContext context) {
-    return Builder(
-      builder: (context) => Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: <Widget>[
-          Padding(
-            padding: EdgeInsets.all(15),
-            child: Center(
-                child: Icon(
-                  Icons.calendar_today,
-                  size: 150,
-                  color: Color.fromRGBO(149, 213, 178, 1),
-                ),
-            ),
-          ),
-          Padding(
-            padding: EdgeInsets.fromLTRB(0, 10, 0, 10),
-            child: Center(
-              child: Text(
-                 "One what day would you like\nthe monthly cycle to reset?",
-                 style: TextStyle(
-                   fontSize: 20,
-                 ),
-               )
-            ),
-         ),
-         Padding(
-            padding: EdgeInsets.fromLTRB(0, 10, 0, 20),
-            child: Center(
-               child: Text(
-                 "(Try to do before the 28th, considering February)",
-                 style: TextStyle(
-                 fontSize: 15,
-                 color: Colors.black54
-                   ),
-                 )
-             )
-          ),
-          Card(
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8.0)),
-              margin: EdgeInsets.fromLTRB(40, 0, 40, 0),
-              child: Center(
-                child: ListTile(
-                    title: new Row(
-                      children: <Widget>[
-                        Flexible(
-                            child: TextField(
-                              controller: widget.dateController,
-                              decoration: InputDecoration(
-                                border: InputBorder.none,
-                                hintText: 'Enter Date',
-                              ),
-                              keyboardType: TextInputType.number,
-                              textAlign: TextAlign.center,
-                            )
-                        )
-                      ],
-                    )
-                ),
-              )
-          ),
-          Card(
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8.0)),
-              margin: EdgeInsets.fromLTRB(40, 10, 40, 10),
-              color: Color.fromRGBO(149, 213, 178, 1),
-              child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: <Widget>[
-                    ListTile(
-                        onTap:(){
-                          if(widget.dateController.text.isNotEmpty) {
-                            if(isDate(widget.dateController.text)) {
-                              _saveSP("monthlyResetDate", double.parse(widget.dateController.text));
-                              nextPage();
-                            }else{
-                              showSnackBar(context, "Your input is invalid. Please Check again");
-                            }
-                          }else{
-                            showSnackBar(context, "Please enter a reset date");
-                          }
-                        },
-                        title: Text("Next",
-                          style: TextStyle(
-                            fontSize: 18,
-                          ),
-                          textAlign: TextAlign.center,
-                        )
-                    )
-                  ]
-              )
-          )
-        ],
-      )
-    );
-  }
-
   Widget dailyLimit(BuildContext context){
     return Builder(
         builder: (context) => Column(
@@ -282,7 +184,7 @@ class _SplashState extends State<SplashWidget>{
                           onTap:(){
                             if(widget.amountController.text.isNotEmpty) {
                               if(isNumeric(widget.amountController.text)) {
-                                _saveSP("dailyLimit", double.parse(widget.amountController.text));
+                                _saveSP("dailyLimit", num.parse(widget.amountController.text));
                                 finishSplash();
                               }else{
                                 showSnackBar(context, "Your input is invalid. Please Check again");
@@ -310,7 +212,6 @@ class _SplashState extends State<SplashWidget>{
   Widget build(BuildContext context) {
     List<Widget> introPages = <Widget>[
       introScreen(context),
-//      monthlyResetDate(context),
       dailyLimit(context),
     ];
     return Scaffold(
@@ -329,10 +230,14 @@ class _SplashState extends State<SplashWidget>{
     );
   }
 
-  // Saving to Shared Preferences
   _saveSP(String key, dynamic value) async {
     final prefs = await SharedPreferences.getInstance();
-    prefs.setDouble(key, value);
+
+    if(value is String) {prefs.setString(key, value);}
+    else if(value is bool) {prefs.setBool(key, value);}
+    else if(value is int) {prefs.setInt(key, value);}
+    else if(value is double) {prefs.setDouble(key, value);}
+    else {prefs.setStringList(key, value);}
   }
 }
 

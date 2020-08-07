@@ -1,20 +1,23 @@
 import 'package:flutter/material.dart';
-import "package:intl/intl.dart";
-import 'database_helpers.dart';
+import 'package:money_tracker/CurrencyInfo.dart';
 
-class EditWidget extends StatefulWidget {
+import 'package:money_tracker/database_helpers.dart';
+
+
+class EditSpendingWidget extends StatefulWidget {
   final contentController = TextEditingController();
   final amountController = TextEditingController();
-  final SingleEntry item;
-  final String locale;
 
-  EditWidget({Key key, this.item, this.locale}) : super(key: key);
+  final String currency;
+  final SpendingEntry item;
+
+  EditSpendingWidget({Key key, this.item, this.currency}) : super(key: key);
 
   @override
-  State createState() => _EditState();
+  State createState() => _EditSpendingState();
 }
 
-class _EditState extends State<EditWidget> {
+class _EditSpendingState extends State<EditSpendingWidget> {
 
   // Check if the value is numeric
   bool isNumeric(String s) {
@@ -31,13 +34,15 @@ class _EditState extends State<EditWidget> {
     return int.tryParse(s) != null;
   }
 
+  String getMoneyString(num amount){
+    return CurrencyInfo().getCurrencyText(widget.currency, amount);
+  }
+
   @override
   Widget build(BuildContext context) {
     widget.amountController.text = widget.item.amount.toString();
-  if(widget.locale == "KOR"){
-      widget.amountController.text = widget.item.amount.toInt().toString();
-    }
-    widget.contentController.text = widget.item.content == "No Description" ? "" : widget.item.content.toString();
+    widget.contentController.text = widget.item.content;
+
     return WillPopScope(
         onWillPop: () async{
           Navigator.pop(context, widget.item);
@@ -63,25 +68,25 @@ class _EditState extends State<EditWidget> {
                                 )
                             ),
                             Card(
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8.0)),
-                                margin: EdgeInsets.all(8.0),
-                                child: ListTile(
-                                    title: new Row(
-                                      children: <Widget>[
-                                        Flexible(
-                                            child: TextField(
-                                              controller: widget.amountController,
-                                              decoration: InputDecoration(
-                                                border: InputBorder.none,
-                                                hintText: 'Spending Amount',
-                                              ),
-                                              keyboardType: TextInputType.number,
-                                              textAlign: TextAlign.start,
-                                            )
-                                        )
-                                      ],
-                                    )
-                                ),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8.0)),
+                              margin: EdgeInsets.all(8.0),
+                              child: ListTile(
+                                  title: new Row(
+                                    children: <Widget>[
+                                      Flexible(
+                                          child: TextField(
+                                            controller: widget.amountController,
+                                            decoration: InputDecoration(
+                                              border: InputBorder.none,
+                                              hintText: 'Spending Amount',
+                                            ),
+                                            keyboardType: TextInputType.number,
+                                            textAlign: TextAlign.start,
+                                          )
+                                      )
+                                    ],
+                                  )
+                              ),
                             ),
                             Container(
                                 padding: EdgeInsets.fromLTRB(10, 10, 0, 0),
@@ -118,7 +123,7 @@ class _EditState extends State<EditWidget> {
                             Card(
                                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8.0)),
                                 margin: EdgeInsets.fromLTRB(8, 0, 8, 0),
-                                color: Color.fromRGBO(149, 213, 178, 1),
+                                color: Color.fromRGBO(155, 195, 255, 1),
                                 child: Column(
                                     crossAxisAlignment: CrossAxisAlignment.start,
                                     children: <Widget>[
@@ -126,14 +131,15 @@ class _EditState extends State<EditWidget> {
                                           onTap:(){
                                             // Invalid input
                                             if(!isNumeric(widget.amountController.text) ||
-                                                widget.locale == "KOR" && !isInt(widget.amountController.text)) {
+                                                (CurrencyInfo().getCurrencyDecimalPlaces(widget.currency) == 0 &&
+                                                    !isInt(widget.amountController.text))) {
                                               Scaffold.of(context).showSnackBar(SnackBar(
                                                 content: Text('Your Amount is invalid. Please Check again'),
                                                 duration: Duration(seconds: 3),
                                               ));
                                               return;
                                             }
-                                            widget.item.amount = double.parse(widget.amountController.text);
+                                            widget.item.amount = num.parse(widget.amountController.text);
                                             widget.item.content = widget.contentController.text;
                                             Navigator.pop(context, widget.item);
                                           },

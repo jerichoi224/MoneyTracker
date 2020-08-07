@@ -1,69 +1,53 @@
 import 'package:flutter/material.dart';
 import "package:intl/intl.dart";
-import 'package:money_tracker/EditWidget.dart';
-import 'database_helpers.dart';
-import 'package:flutter/services.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
+import 'package:money_tracker/CurrencyInfo.dart';
+import 'package:money_tracker/EditSpendingWidget.dart';
+import 'package:money_tracker/database_helpers.dart';
 
 class SpendingHistoryWidget extends StatefulWidget {
-  final Map<String, double> data;
+  final Map<String, num> numData;
     final Map<String, String> stringData;
 
-  SpendingHistoryWidget({Key key, this.data, this.stringData}) : super(key: key);
+  SpendingHistoryWidget({Key key, this.numData, this.stringData}) : super(key: key);
 
   @override
   State createState() => _SpendingHistoryState();
 }
 
 class _SpendingHistoryState extends State<SpendingHistoryWidget> with WidgetsBindingObserver{
-  NumberFormat moneyUS = NumberFormat.simpleCurrency(decimalDigits: 2);
-  NumberFormat moneyKor = NumberFormat.currency(symbol: "₩", decimalDigits: 0);
-
-  int remaining, saved;
   String dayString;
   DateTime _day;
-  List<SingleEntry> tempSpendingList;
+  int today;
+  List<SpendingEntry> spendingList;
 
   @override
   void initState(){
-    WidgetsBinding.instance.addObserver(this);
     super.initState();
 
-    SystemChannels.lifecycle.setMessageHandler((msg){
-      if(msg==AppLifecycleState.resumed.toString())
-      if(this.mounted) {
-        _day = DateTime.now().toLocal();
-        setState(() {});
-      }
-      return null;
-    });
+    DateTime now = DateTime.now().toLocal();
+    today = DateTime(now.year, now.month, now.day).millisecondsSinceEpoch;
 
-    _day = DateTime.now().toLocal();
-    tempSpendingList = new List<SingleEntry>();
+    widget.numData["_day"] = DateTime.now().toLocal().millisecondsSinceEpoch;
+    spendingList = new List<SpendingEntry>();
 
     _queryAllDB().then((entries){
-      setState(() {tempSpendingList = entries;
+      setState(() {spendingList = entries;
       });});
-  }
-
-  @override
-  void dispose() {
-    WidgetsBinding.instance.removeObserver(this);
-    super.dispose();
   }
 
   String dayToString(DateTime dt){
     return DateFormat('yyyy/MM/dd').format(dt);
   }
 
-  TextSpan _moneyText(double a) {
-    if(widget.stringData["locale"] == "KOR"){
-      return TextSpan(text: moneyKor.format(a.toInt()),
-          style: TextStyle(color: getColor(a)));
-    }
-    // round value to two decimal
-    int rounded = (a * 100).round().toInt();
-    return TextSpan(text: moneyUS.format(rounded/100.0),
-        style: TextStyle(color: getColor(a)));
+  String getMoneyString(num amount){
+    return CurrencyInfo().getCurrencyText(widget.stringData["currency"], amount);
+  }
+
+  TextSpan _moneyText(num amount) {
+    return TextSpan(text: getMoneyString(amount),
+        style: TextStyle(color: getColor(amount)));
   }
 
   Color getColor(i) {
@@ -72,16 +56,16 @@ class _SpendingHistoryState extends State<SpendingHistoryWidget> with WidgetsBin
     return Colors.black;
   }
 
-  void _openEditWidget(SingleEntry item) async {
+  void _openEditWidget(SpendingEntry item) async {
     // start the SecondScreen and wait for it to finish with a result
 
     String oldContent = item.content;
     double oldAmount = item.amount;
 
-    final SingleEntry result = await Navigator.push(
+    final SpendingEntry result = await Navigator.push(
         context,
         MaterialPageRoute(
-          builder: (context) => EditWidget(item: item, locale: widget.stringData["locale"],),
+          builder: (context) => EditSpendingWidget(item: item, currency: widget.stringData["currency"],),
         )
     );
 
@@ -89,16 +73,17 @@ class _SpendingHistoryState extends State<SpendingHistoryWidget> with WidgetsBin
       return;
     }
 
-    for(SingleEntry i in tempSpendingList){
+    for(SpendingEntry i in spendingList){
       if(i.id == result.id){
         i.content = result.content;
         i.amount = result.amount;
-        if(i.day == DateFormat('yyyyMMdd').format(DateTime.now().toLocal())) {
-          widget.data["todaySpent"] -= oldAmount;
-          widget.data["todaySpent"] += result.amount;
+        if(i.day == today){
+          widget.numData["todaySpent"] -= oldAmount;
+          widget.numData["todaySpent"] += result.amount;
         }else{
-          widget.data["totalSaved"] -= oldAmount;
-          widget.data["totalSaved"] += result.amount;
+          widget.numData["totalSaved"] -= oldAmount;
+          widget.numData["totalSaved"] += result.amount;
+          _saveSP("totalSaved", widget.numData["totalSaved"]);
         }
         _updateDB(i);
       }
@@ -108,23 +93,25 @@ class _SpendingHistoryState extends State<SpendingHistoryWidget> with WidgetsBin
   }
 
   titleText(){
-    if(widget.data["historyMode"] == 1.0){
+    if(widget.numData["historyMode"] == 1){
       return "Spending History";
     }
-    return dayToString(_day) == dayToString(DateTime.now().toLocal()) ? "Today's Spending" : "Spendings on $dayString";
+    return dayToString(_day) == dayToString(DateTime.now().toLocal()) ? "Today's Spending" : "Spending on $dayString";
   }
 
-  _popUpMenuButton(SingleEntry i) {
+  _popUpMenuButton(SpendingEntry i) {
     return PopupMenuButton(
       icon: Icon(Icons.more_vert),
       onSelected: (selectedIndex) { // add this property
         if(selectedIndex == 1){
           _deleteDB(i.id);
-          tempSpendingList.remove(i);
-          if(i.day == DateFormat('yyyyMMdd').format(DateTime.now().toLocal()))
-            widget.data["todaySpent"] -= i.amount;
-          else
-            widget.data["totalSaved"] -= i.amount;
+          spendingList.remove(i);
+          if(i.day == today)
+            widget.numData["todaySpent"] -= i.amount;
+          else {
+            widget.numData["totalSaved"] -= i.amount;
+            _saveSP("totalSaved", widget.numData["totalSaved"]);
+          }
           setState(() {});
         }
         else if(selectedIndex == 0){
@@ -144,34 +131,33 @@ class _SpendingHistoryState extends State<SpendingHistoryWidget> with WidgetsBin
     );
   }
 
-  getTimeText(SingleEntry i){
+  getTimeText(SpendingEntry i){
     DateTime dt = new DateTime.fromMillisecondsSinceEpoch(i.timestamp);
     return "\t\t(" + DateFormat('h:mm a').format(dt) + ")";
   }
 
   List<Widget> spendingHistory(){
     List<Widget> history = new List<Widget>();
-    DateTime tmp = new DateTime(0);
-    for(SingleEntry i in tempSpendingList.reversed){
+    int tmp = 0;
+    for(SpendingEntry i in spendingList.reversed){
       // If In Daily Mode, skip anything from other dates
-      if(widget.data["historyMode"] == 0.0 && i.day != DateFormat('yyyyMMdd').format(_day)){
+      if(widget.numData["historyMode"] == 0 && i.day != today){
         continue;
       }
       // If in Entire History Mode, show date changes
-      if(widget.data["historyMode"] == 1.0 && DateFormat('yyyyMMdd').format(tmp)
-          != DateFormat('yyyyMMdd').format(DateTime.fromMillisecondsSinceEpoch(i.timestamp))){
-        tmp = DateTime.fromMillisecondsSinceEpoch(i.timestamp);
+      if(widget.numData["historyMode"] == 1 && tmp != i.day){
+        tmp = i.day;
         history.add(
-          Padding(
-            padding: EdgeInsets.fromLTRB(0, 5, 0, 5),
-            child: Text(DateFormat('yyyy/MM/dd').format(tmp),
-              style: TextStyle(
-                fontSize: 15,
-                fontWeight: FontWeight.bold,
-                color: Colors.black54
-              ),
+            Padding(
+                padding: EdgeInsets.fromLTRB(0, 5, 0, 5),
+                child: Text(dayToString(DateTime.fromMillisecondsSinceEpoch(tmp)),
+                  style: TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black54
+                  ),
+                )
             )
-          )
         );
       }
       history.add(
@@ -199,11 +185,13 @@ class _SpendingHistoryState extends State<SpendingHistoryWidget> with WidgetsBin
       );
     }
     return history.length > 0 ? history : List.from(
-        [Text("Nothing Found!")]);
+        [Text("Nothing Found Here!")]);
   }
 
   @override
   Widget build(BuildContext context) {
+    _day = DateTime.fromMillisecondsSinceEpoch(widget.numData["_day"]);
+
     return SingleChildScrollView(
       child: Column(
         children: <Widget>[
@@ -212,7 +200,7 @@ class _SpendingHistoryState extends State<SpendingHistoryWidget> with WidgetsBin
             child: ListTile(
               dense: true,
               leading: Visibility(
-                visible: widget.data["historyMode"] == 0.0,
+                visible: widget.numData["historyMode"] == 0,
                 child: IconButton(
                   icon: Icon(Icons.calendar_today),
                   onPressed: (){
@@ -237,8 +225,11 @@ class _SpendingHistoryState extends State<SpendingHistoryWidget> with WidgetsBin
                         },
                     ).then((value) {
                       setState(() {
-                        _day = value != null? value : _day;
-                        dayString = dayToString(_day);
+                        if(value != null){
+                          _day = value;
+                          widget.numData["_day"] = _day.millisecondsSinceEpoch;
+                          dayString = dayToString(_day);
+                        }
                       });
                     });
                   },
@@ -266,13 +257,23 @@ class _SpendingHistoryState extends State<SpendingHistoryWidget> with WidgetsBin
     await helper.deleteSingleEntry(id);
   }
 
-  _updateDB(SingleEntry entry) async{
+  _updateDB(SpendingEntry entry) async{
     DatabaseHelper helper = DatabaseHelper.instance;
     await helper.updateSingleEntry(entry);
   }
 
-  Future<List<SingleEntry>> _queryAllDB() async {
+  Future<List<SpendingEntry>> _queryAllDB() async {
     DatabaseHelper helper = DatabaseHelper.instance;
-    return await helper.queryAll();
+    return await helper.queryAllSpending();
+  }
+
+  _saveSP(String key, dynamic value) async {
+    final prefs = await SharedPreferences.getInstance();
+
+    if(value is String) {prefs.setString(key, value);}
+    else if(value is bool) {prefs.setBool(key, value);}
+    else if(value is int) {prefs.setInt(key, value);}
+    else if(value is double) {prefs.setDouble(key, value);}
+    else {prefs.setStringList(key, value);}
   }
 }

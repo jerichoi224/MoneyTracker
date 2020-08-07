@@ -4,28 +4,29 @@ import 'package:sqflite/sqflite.dart';
 import 'package:path_provider/path_provider.dart';
 
 // database table and column names
-final String tableSpending = 'spendings';
+final String tableSpending = 'spending';
 final String tableSubscriptions = 'tableSubscriptions';
 
 final String columnId = '_id';
 final String columnTimeStamp = 'timestamp';
 final String columnDay = 'day';
-final String columnCycle = 'cycle';
 final String columnAmount = 'amount';
 final String columnContent = 'content';
 
+final String columnCycle = 'cycle';
+
 // data model class
-class SingleEntry {
+class SpendingEntry {
 
   // Five items per spending entry
-  int id, timestamp;
-  String day, content;
+  int id, timestamp, day;
+  String content;
   double amount;
 
-  SingleEntry();
+  SpendingEntry();
 
   // convenience constructor to create a Word object
-  SingleEntry.fromMap(Map<String, dynamic> map) {
+  SpendingEntry.fromMap(Map<String, dynamic> map) {
     id = map[columnId];
     timestamp = map[columnTimeStamp];
     day = map[columnDay];
@@ -128,7 +129,7 @@ class DatabaseHelper {
               CREATE TABLE $tableSpending (
                 $columnId INTEGER PRIMARY KEY,
                 $columnTimeStamp INTEGER NOT NULL,
-                $columnDay TEXT NOT NULL,
+                $columnDay INTEGER NOT NULL,
                 $columnAmount REAL NOT NULL,
                 $columnContent TEXT NOT NULL
               )
@@ -177,39 +178,39 @@ class DatabaseHelper {
         where: '$columnId = ?', whereArgs: [entry.id]);
   }
 
-  Future<int> insert(SingleEntry entry) async {
+  Future<int> insertSpending(SpendingEntry entry) async {
     Database db = await database;
     int id = await db.insert(tableSpending, entry.toMap());
     return id;
   }
 
-  Future<SingleEntry> querySpending(int id) async {
+  Future<SpendingEntry> querySpending(int id) async {
     Database db = await database;
     List<Map> maps = await db.query(tableSpending,
         columns: [columnId, columnTimeStamp, columnDay, columnAmount, columnContent],
         where: '$columnId = ?',
         whereArgs: [id]);
     if (maps.length > 0) {
-      return SingleEntry.fromMap(maps.first);
+      return SpendingEntry.fromMap(maps.first);
     }
     return null;
   }
 
   // Get all items from today
-  Future<List<SingleEntry>> queryDay(String day) async {
+  Future<List<SpendingEntry>> queryDay(num day) async {
     Database db = await database;
     List<Map> maps = await db.query(tableSpending,
         columns: [columnId, columnTimeStamp, columnDay, columnAmount, columnContent],
         where: '$columnDay = ?',
         whereArgs: [day]);
-    List<SingleEntry> result = new List<SingleEntry>();
+    List<SpendingEntry> result = new List<SpendingEntry>();
     if (maps.length > 0) {
       for(Map i in maps){
-        result.add(SingleEntry.fromMap(i));
+        result.add(SpendingEntry.fromMap(i));
       }
       return result;
     }
-    return new List<SingleEntry>();
+    return new List<SpendingEntry>();
   }
 
   Future<int> deleteSingleEntry(int id) async {
@@ -217,23 +218,23 @@ class DatabaseHelper {
     return await db.delete(tableSpending, where: '$columnId = ?', whereArgs: [id]);
   }
 
-  Future<int> updateSingleEntry(SingleEntry entry) async {
+  Future<int> updateSingleEntry(SpendingEntry entry) async {
     Database db = await database;
     return await db.update(tableSpending, entry.toMap(),
         where: '$columnId = ?', whereArgs: [entry.id]);
   }
 
-  Future<List<SingleEntry>> queryAll() async {
+  Future<List<SpendingEntry>> queryAllSpending() async {
     Database db = await database;
     List<Map> maps = await db.rawQuery('SELECT * FROM $tableSpending');
-    List<SingleEntry> result = new List<SingleEntry>();
+    List<SpendingEntry> result = new List<SpendingEntry>();
     if (maps.length > 0) {
       for(Map i in maps){
-        result.add(SingleEntry.fromMap(i));
+        result.add(SpendingEntry.fromMap(i));
       }
       return result;
     }
-    return new List<SingleEntry>();
+    return new List<SpendingEntry>();
   }
 
   Future<int> clearSpendingTable() async{

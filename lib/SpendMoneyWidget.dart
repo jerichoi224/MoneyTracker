@@ -1,35 +1,35 @@
 import 'package:flutter/material.dart';
-import "package:intl/intl.dart";
 import 'package:flutter_keyboard_visibility/flutter_keyboard_visibility.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:math';
+
 import 'database_helpers.dart';
+import 'CurrencyInfo.dart';
 
 class SpendMoneyWidget extends StatefulWidget {
-  final Map<String, double> data;
+  final Map<String, num> numData;
   final Map<String, String> stringData;
   final _myController = TextEditingController();
-  SpendMoneyWidget({Key key, this.data, this.stringData}) : super(key: key);
+
+  SpendMoneyWidget({Key key, this.numData, this.stringData}) : super(key: key);
 
   @override
   State createState() => _SpendMoneyState();
 }
 
 class _SpendMoneyState extends State<SpendMoneyWidget> {
-  NumberFormat moneyUS = NumberFormat.simpleCurrency(decimalDigits: 2);
-  NumberFormat moneyKor = NumberFormat.currency(symbol: "₩", decimalDigits: 0);
-
   String amount;
 
   @override
   void initState() {
     super.initState();
 
-    widget.data["keypadVisibility"] = 1.0;
-    widget._myController.text = widget.stringData["SpendContent"];
+    widget.numData["keypadVisibility"] = 1.0;
 
     KeyboardVisibility.onChange.listen((bool visible) {
-      widget.data["keypadVisibility"] = 1.0;
+      widget.numData["keypadVisibility"] = 1.0;
       if(visible){
-        widget.data["keypadVisibility"] = 0.0;
+        widget.numData["keypadVisibility"] = 0.0;
       }
       if (this.mounted) {
         setState(() {
@@ -39,10 +39,10 @@ class _SpendMoneyState extends State<SpendMoneyWidget> {
   }
 
   String getMoneyText(){
-    if(widget.stringData["locale"] == "KOR"){
-      return moneyKor.format(double.parse(amount));
-    }
-    return moneyUS.format(double.parse(amount)/100.0);
+    return CurrencyInfo().getCurrencyText(
+        widget.stringData["currency"],
+        num.parse(amount)/pow(10, CurrencyInfo().getCurrencyDecimalPlaces(widget.stringData["currency"]))
+    );
   }
 
   Widget buildButton(String s, [Icon i, Color c, double fontSize]){
@@ -65,30 +65,29 @@ class _SpendMoneyState extends State<SpendMoneyWidget> {
       }
     }else if(s == "Spend" || s == "Save"){
       FocusScope.of(context).unfocus();
-      double val = double.parse(amount) / 100.0;
-      if(widget.stringData["locale"] == "KOR"){
-        val *= 100;
-      }
+      double val = num.parse(amount)/pow(10, CurrencyInfo().getCurrencyDecimalPlaces(widget.stringData["currency"]));
+
       if(val > 0) {
         String content = widget._myController.text.isEmpty
             ? ("")
             : widget._myController.text;
 
-        SingleEntry entry = SingleEntry();
+        SpendingEntry entry = SpendingEntry();
+
         if(s == "Spend"){
           val *= -1;
         }
 
-        widget.data["todaySpent"] += val;
-
         DateTime dt = DateTime.now().toLocal();
         entry.timestamp = dt.millisecondsSinceEpoch;
-        entry.day = DateFormat('yyyyMMdd').format(dt);
+        entry.day = DateTime(dt.year, dt.month, dt.day).millisecondsSinceEpoch;
         entry.amount = val;
         entry.content = content;
-
         // Save new Entry
         _saveDB(entry);
+
+        widget.numData["todaySpent"] += val;
+        _saveSP("todaySpent", widget.numData["todaySpent"]);
 
         // Reset Amount and Content
         amount = "0";
@@ -99,125 +98,136 @@ class _SpendMoneyState extends State<SpendMoneyWidget> {
     }else{
       amount += s;
     }
-    widget.stringData["SpendContent"] = widget._myController.text;
+
     setState(() {
-      amount = amount;
-      widget.data["SpendValue"] = double.parse(amount);
+      widget.numData["spendAmount"] = int.parse(amount);
     });
   }
 
   @override
   Widget build(BuildContext context) {
-    amount = widget.data["SpendValue"].toInt().toString();
-    widget._myController.text = widget.stringData["SpendContent"];
+    amount = widget.numData["spendAmount"].toInt().toString();
+    widget._myController.text = widget.stringData["spendContent"];
     widget._myController.selection = TextSelection.fromPosition(TextPosition(offset: widget._myController.text.length));
 
     return new GestureDetector(
         onTap: () {
-          widget.stringData["SpendContent"] = widget._myController.text;
           FocusScope.of(context).unfocus();
         },
         child:new Container(
-          child: CustomScrollView(
-              slivers: [
-              SliverFillRemaining(
-                  hasScrollBody: false,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: <Widget>[
+            child: CustomScrollView(
+                slivers: [
+                  SliverFillRemaining(
+                      hasScrollBody: false,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: <Widget>[
 
-                      new Container(
-                        padding: new EdgeInsets.fromLTRB(0, 55, 0, 30),
-                        child: new Text(getMoneyText(),
-                          textAlign: TextAlign.center,
-                          style: new TextStyle(
-                            fontSize: 50,
+                          new Container(
+                            padding: new EdgeInsets.fromLTRB(0, 55, 0, 30),
+                            child: new Text(getMoneyText(),
+                              textAlign: TextAlign.center,
+                              style: new TextStyle(
+                                fontSize: 50,
+                              ),
+                            ),
                           ),
-                        ),
-                      ),
-                      ListTile(
-                          title: new Row(
-                            children: <Widget>[
-                              Flexible(
-                                  child: TextField(
-                                    controller: widget._myController,
-                                    decoration: InputDecoration(
-                                      border: const OutlineInputBorder(),
-                                      hintText: '(Optional) Enter Description',
-                                    ),
-                                    textAlign: TextAlign.start,
+                          ListTile(
+                              title: new Row(
+                                children: <Widget>[
+                                  Flexible(
+                                      child: TextField(
+                                        controller: widget._myController,
+                                        onChanged: (text) {
+                                          widget.stringData["spendContent"] = text;
+                                        },
+                                        decoration: InputDecoration(
+                                          border: const OutlineInputBorder(),
+                                          hintText: '(Optional) Enter Description',
+                                        ),
+                                        textAlign: TextAlign.start,
 
+                                      )
                                   )
+                                ],
                               )
-                            ],
-                          )
-                      ),
-                      new Expanded(child: new Container()),
+                          ),
+                          new Expanded(child: new Container()),
 
-                      IntrinsicHeight(
-                        child: new Row(
-                          children: [
-                            Visibility (
-                              visible: widget.data["showSave"] == 1.0,
-                             child: buildButton("Save", null, Color.fromRGBO(149, 213, 178, 1)),
+                          IntrinsicHeight(
+                            child: new Row(
+                                children: [
+                                  Visibility (
+                                    visible: widget.numData["showSave"] == 1,
+                                    child: buildButton("Save", null, Color.fromRGBO(149, 213, 178, 1)),
+                                  ),
+                                  Visibility(
+                                      visible: widget.numData["showSave"] == 1,
+                                      child: Container(
+                                        width: 1,
+                                        color: Colors.black12,
+                                      )
+                                  ),
+                                  buildButton("Spend", null, Color.fromRGBO(149, 213, 178, 1)),
+                                ]
                             ),
-                            Visibility(
-                              visible: widget.data["showSave"] == 1.0,
-                              child: Container(
-                                width: 1,
-                                color: Colors.black12,
+                          ),
+                          Visibility (
+                              visible: widget.numData["keypadVisibility"] == 1.0,
+                              child: new Column(
+                                children: [
+                                  new Row(
+                                    children: [
+                                      buildButton("1"),
+                                      buildButton("2"),
+                                      buildButton("3"),
+                                    ],
+                                  ),
+                                  new Row(
+                                    children: [
+                                      buildButton("4"),
+                                      buildButton("5"),
+                                      buildButton("6"),
+                                    ],
+                                  ),
+                                  new Row(
+                                    children: [
+                                      buildButton("7"),
+                                      buildButton("8"),
+                                      buildButton("9"),
+                                    ],
+                                  ),
+                                  new Row(
+                                    children: [
+                                      buildButton("C"),
+                                      buildButton("0"),
+                                      buildButton("erase", Icon(Icons.backspace)),
+                                    ],
+                                  )
+                                ],
                               )
-                            ),
-                            buildButton("Spend", null, Color.fromRGBO(149, 213, 178, 1)),
-                          ]
-                        ),
-                      ),
-                      Visibility (
-                        visible: widget.data["keypadVisibility"] == 1.0,
-                        child: new Column(
-                          children: [
-                            new Row(
-                              children: [
-                                buildButton("1"),
-                                buildButton("2"),
-                                buildButton("3"),
-                              ],
-                            ),
-                            new Row(
-                              children: [
-                                buildButton("4"),
-                                buildButton("5"),
-                                buildButton("6"),
-                              ],
-                            ),
-                            new Row(
-                              children: [
-                                buildButton("7"),
-                                buildButton("8"),
-                                buildButton("9"),
-                              ],
-                            ),
-                            new Row(
-                              children: [
-                                buildButton("C"),
-                                buildButton("0"),
-                                buildButton("erase", Icon(Icons.backspace)),
-                              ],
-                            )
-                          ],
-                        )
-                      ),
-                    ],
+                          ),
+                        ],
+                      )
                   )
-                )
-              ]
-          )
+                ]
+            )
         )
     );
   }
 
-  _saveDB(SingleEntry entry) async {
+  _saveDB(SpendingEntry entry) async {
     DatabaseHelper helper = DatabaseHelper.instance;
-    await helper.insert(entry);
+    await helper.insertSpending(entry);
+  }
+
+  _saveSP(String key, dynamic value) async {
+    final prefs = await SharedPreferences.getInstance();
+
+    if(value is String) {prefs.setString(key, value);}
+    else if(value is bool) {prefs.setBool(key, value);}
+    else if(value is int) {prefs.setInt(key, value);}
+    else if(value is double) {prefs.setDouble(key, value);}
+    else {prefs.setStringList(key, value);}
   }
 }

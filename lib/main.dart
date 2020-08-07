@@ -50,7 +50,7 @@ class _MainState extends State<MainApp> {
   }
 
   Widget build(BuildContext context){
-    new Timer(new Duration(milliseconds: 200), () {
+    new Timer(new Duration(milliseconds: 10), () {
       checkFirstSeen();
     });
     return Scaffold(

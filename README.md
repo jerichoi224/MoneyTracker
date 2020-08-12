@@ -4,7 +4,7 @@
 </h1>
 
 Application for Tracking Daily Money Usage in hope of helping me save money, made with Flutter.
-[Available in Google Play Store](https://play.google.com/store/apps/details?id=com.kahluabear.money_tracker&ah=Q-xAfI_2q4fv8B5SXuzCaEp0gTk)
+[Available in Google Play Store](https://play.google.com/store/apps/details?id=com.kahluabear.money_tracker)
 
 ### Development Status
 I've added everything I wanted to add for my personal need which includes the functions and support for Dollars and Korean Won. If requested, I can add more currency, but unless I come up with more ideas on functionalities or find bugs while using it, the development will be on pause for now. 
